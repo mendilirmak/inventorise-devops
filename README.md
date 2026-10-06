@@ -102,6 +102,55 @@ Replicas go from 2 up to as many as 5 while the load runs, and back to 2
 about 2 minutes after it stops. The autoscaler compares CPU use with the
 pod's CPU *request* (100m), which is why the request must be set.
 
+## Monitoring (`monitoring/`)
+
+**kube-prometheus-stack** (Helm chart 91.9.0) installs Prometheus (collects
+and stores metrics), Grafana (dashboards) and the exporters that report pod
+CPU, memory and replica counts. It goes into the `monitoring` namespace,
+the only namespace besides ingress-nginx that the app's NetworkPolicy lets
+in.
+
+| File | What it is |
+|---|---|
+| `monitoring/values.yaml` | Our chart settings: no Alertmanager, 2-day retention, Grafana password from a Secret |
+| `monitoring/servicemonitor.yaml` | Tells Prometheus to scrape the app's `/metrics` every 15 s |
+| `monitoring/inventory-dashboard.json` | The "Inventorise app" Grafana dashboard |
+| `monitoring/kustomization.yaml` | Applies the ServiceMonitor and turns the dashboard into a ConfigMap |
+
+```bash
+scripts/monitoring-up.sh      # after minikube-up.sh; ~3-5 min
+```
+
+The script creates the Secret `grafana-admin` with a random password (never
+stored in a file), installs the chart, then applies `monitoring/`.
+Grafana loads the dashboard automatically from the ConfigMap labelled
+`grafana_dashboard: "1"`.
+
+**Open Grafana:**
+
+```bash
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+# password for user "admin":
+kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Browse to http://localhost:3000 → Dashboards → **Inventorise app**.
+To import it by hand instead (e.g. into another Grafana): Dashboards →
+New → Import → upload `monitoring/inventory-dashboard.json` → pick the
+Prometheus data source.
+
+| Panel | Shows |
+|---|---|
+| Request rate per endpoint | Requests/second per route (health checks excluded) |
+| p95 latency per endpoint | 95% of requests are faster than this |
+| Error rate (5xx) | Share of requests that failed with a server error |
+| Low-stock products | The app's own `inventory_low_stock_products` metric |
+| App replicas (autoscaling) | Available pods vs. what the autoscaler wants |
+| App pod CPU / memory | Per pod, compared with the requests and limits |
+
+**Check it works:** run `scripts/load-test.sh` — request rate, CPU and
+then the replica count rise within a minute or two.
+
 ## Start over / stop
 
 ```bash

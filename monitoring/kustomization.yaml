@@ -1,0 +1,17 @@
+# Our monitoring objects, applied after the Helm chart:
+#   kubectl apply -k monitoring/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - servicemonitor.yaml
+# The dashboard JSON becomes a ConfigMap. Grafana's sidecar loads every
+# ConfigMap with the label grafana_dashboard: "1" automatically.
+configMapGenerator:
+  - name: inventory-dashboard
+    namespace: monitoring
+    files:
+      - inventory-dashboard.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
