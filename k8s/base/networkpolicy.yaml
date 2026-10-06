@@ -1,0 +1,48 @@
+# Network rules ("firewall" between pods). Enforced only if the cluster's
+# network plugin supports NetworkPolicy (Minikube is started with
+# --cni=calico for this).
+#
+# 1. Only app pods may connect to Postgres on port 5432.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-allow-app-only
+  namespace: inventory
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: inventory-app
+      ports:
+        - port: 5432
+          protocol: TCP
+---
+# 2. App pods accept traffic only from ingress-nginx (user requests) and from
+#    the monitoring namespace (Prometheus scraping /metrics). Kubernetes
+#    health probes come from the node itself and are always allowed.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: app-allow-ingress-and-monitoring
+  namespace: inventory
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-app
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8000
+          protocol: TCP

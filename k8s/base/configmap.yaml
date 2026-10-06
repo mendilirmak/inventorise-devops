@@ -1,0 +1,11 @@
+# Non-secret settings for the app. Secrets live in the inventory-db and
+# inventory-app Secrets (see secret.example.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inventory-config
+  namespace: inventory
+data:
+  APP_ENV: prod             # the minikube overlay changes this to dev (no TLS there)
+  LOW_STOCK_THRESHOLD: "10"
+  LOG_LEVEL: INFO

@@ -1,0 +1,104 @@
+# PostgreSQL: one replica with its own persistent disk.
+# StatefulSet (not Deployment): the pod keeps a stable name (postgres-0) and
+# always gets the same PersistentVolumeClaim back, so data survives restarts.
+# Never autoscaled.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: postgres
+spec:
+  # Headless service (no virtual IP): DNS "postgres" points straight at the pod.
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+    spec:
+      automountServiceAccountToken: false   # postgres never talks to the Kubernetes API
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999        # the "postgres" user inside the official image
+        runAsGroup: 999
+        fsGroup: 999          # makes the mounted disk writable for that user
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16.15
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: inventory-db   # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+          env:
+            # A sub-folder, because a fresh disk contains "lost+found" and
+            # Postgres refuses to initialise a non-empty folder.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            # Postgres needs these two writable; everything else stays read-only.
+            - name: run
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # storageClassName is set by each overlay (standard / gp3).
+        resources:
+          requests:
+            storage: 1Gi

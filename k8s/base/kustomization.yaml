@@ -1,0 +1,18 @@
+# Base manifests shared by every environment. Overlays (overlays/minikube,
+# overlays/eks) add only what differs. Build with: kubectl kustomize <dir>
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: inventory
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: inventorise
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres-statefulset.yaml
+  - app-deployment.yaml
+  - app-service.yaml
+  - ingress.yaml
+  - app-hpa.yaml
+  - networkpolicy.yaml
+# secret.example.yaml is deliberately NOT listed: it is documentation only.

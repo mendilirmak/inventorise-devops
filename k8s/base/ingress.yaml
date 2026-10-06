@@ -1,0 +1,22 @@
+# Routes http://<host>/ to the app Service through ingress-nginx.
+# The host is set per overlay (inventory.local on Minikube).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: inventory-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: inventory.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  name: http

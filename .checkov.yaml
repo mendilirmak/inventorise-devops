@@ -1,0 +1,15 @@
+# Checkov settings, used by the pipeline (checkov -d k8s/ and -d terraform/).
+# Every skipped check has a one-line reason. Keep this list short.
+skip-check:
+  # Image pull policy "Always": our tags are immutable (git commit SHA, exact
+  # upstream versions), and Minikube images are built locally, never pulled.
+  - CKV_K8S_15
+  # Secrets as files instead of env vars: the app is configured only through
+  # env vars (12-factor), and the official postgres image reads env vars.
+  - CKV_K8S_35
+  # Image digest: images are pinned to exact tags; digests would make the
+  # manifests hard to read for a teaching project. Production: pin digests.
+  - CKV_K8S_43
+  # High UID: postgres runs as UID 999, the official image's own user;
+  # the app itself runs as UID 10001.
+  - CKV_K8S_40

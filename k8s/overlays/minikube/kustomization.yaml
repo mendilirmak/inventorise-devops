@@ -1,0 +1,20 @@
+# Minikube: local cluster, plain HTTP at http://inventory.local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  # No TLS on Minikube, so the session cookie must not be "Secure-only",
+  # or the browser would never send it back and login would fail.
+  # (Known gap, listed in docs/SECURITY.md.)
+  - target: {kind: ConfigMap, name: inventory-config}
+    patch: |-
+      - op: replace
+        path: /data/APP_ENV
+        value: dev
+  # Minikube's built-in storage class.
+  - target: {kind: StatefulSet, name: postgres}
+    patch: |-
+      - op: add
+        path: /spec/volumeClaimTemplates/0/spec/storageClassName
+        value: standard
