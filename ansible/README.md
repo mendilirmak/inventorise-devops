@@ -31,6 +31,11 @@ export PATH=$HOME/.local/bin:$PATH
 scripts/aws-instances.sh start
 scripts/make-inventory.sh
 
+# Until AWS raises the account's 16-vCPU limit, only 8 of the 9 instances can
+# run at once (starting the ninth fails with VcpuLimitExceeded). Leave one out:
+#   EXCLUDE=inventorise-worker-2 scripts/aws-instances.sh start
+#   EXCLUDE=inventorise-worker-2 scripts/make-inventory.sh
+
 # 3. Install the pinned collections once, then run the playbook
 cd ansible
 ansible-galaxy collection install -r requirements.yml -p collections

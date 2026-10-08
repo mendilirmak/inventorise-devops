@@ -6,6 +6,10 @@
 #   scripts/aws-instances.sh status
 #   scripts/aws-instances.sh start     # starts all, waits until running
 #   scripts/aws-instances.sh stop      # stops all, waits until stopped
+#
+# While the account's 16-vCPU limit is not raised, only eight of the nine
+# instances can run at once. Leave one out with EXCLUDE (names, comma-separated):
+#   EXCLUDE=inventorise-worker-2 scripts/aws-instances.sh start
 set -euo pipefail
 
 PROFILE=${AWS_PROFILE:-inventorise}
@@ -14,10 +18,14 @@ ACTION=${1:-status}
 
 ec2() { aws ec2 "$@" --region "$REGION" --profile "$PROFILE" --output text; }
 
+EXCLUDE=${EXCLUDE:-}
+
+# Prints the IDs of project instances in the given states, minus any named in EXCLUDE.
 ids_in_states() {
   ec2 describe-instances \
     --filters "Name=tag:Project,Values=inventorise" "Name=instance-state-name,Values=$1" \
-    --query 'Reservations[].Instances[].InstanceId'
+    --query 'Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`]|[0].Value]' |
+    awk -v skip=",$EXCLUDE," 'index(skip, "," $2 ",") == 0 { printf "%s ", $1 }'
 }
 
 case $ACTION in
