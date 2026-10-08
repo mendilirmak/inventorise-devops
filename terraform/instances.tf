@@ -28,6 +28,10 @@ resource "aws_instance" "bastion" {
     encrypted   = true
   }
 
+  # Root disks get the same tag, so the shred script can find them even if the
+  # instance is gone (disks keep billing until deleted).
+  volume_tags = { Project = "inventorise" }
+
   tags = { Name = "inventorise-bastion", Role = "bastion" }
 }
 
@@ -52,6 +56,10 @@ resource "aws_instance" "control_plane" {
     volume_type = "gp3"
     encrypted   = true
   }
+
+  # Root disks get the same tag, so the shred script can find them even if the
+  # instance is gone (disks keep billing until deleted).
+  volume_tags = { Project = "inventorise" }
 
   tags = { Name = "inventorise-cp-${count.index + 1}", Role = "control-plane" }
 }
@@ -78,6 +86,10 @@ resource "aws_instance" "worker" {
     encrypted   = true
   }
 
+  # Root disks get the same tag, so the shred script can find them even if the
+  # instance is gone (disks keep billing until deleted).
+  volume_tags = { Project = "inventorise" }
+
   tags = { Name = "inventorise-worker-${count.index + 1}", Role = "worker" }
 }
 
@@ -103,6 +115,10 @@ resource "aws_instance" "postgres" {
     encrypted   = true
   }
 
+  # Root disks get the same tag, so the shred script can find them even if the
+  # instance is gone (disks keep billing until deleted).
+  volume_tags = { Project = "inventorise" }
+
   # The first node is the primary, the second the standby. Ansible sets the roles.
   tags = { Name = "inventorise-pg-${count.index + 1}", Role = "postgres" }
 }
@@ -127,6 +143,10 @@ resource "aws_instance" "ci" {
     volume_type = "gp3"
     encrypted   = true
   }
+
+  # Root disks get the same tag, so the shred script can find them even if the
+  # instance is gone (disks keep billing until deleted).
+  volume_tags = { Project = "inventorise" }
 
   tags = { Name = "inventorise-ci", Role = "ci" }
 }
