@@ -1,5 +1,5 @@
 # Managed by Ansible.
-listen_addresses = 'localhost,{{ ansible_default_ipv4.address }}'
+listen_addresses = 'localhost,{{ ansible_facts['default_ipv4']['address'] }}'
 password_encryption = scram-sha-256
 ssl = on                      # the Ubuntu default certificate; encrypts traffic
 wal_level = replica
