@@ -33,3 +33,8 @@ Thumbs.db
 # Terraform: real variable values (contain your home IP) and local state
 terraform/terraform.tfvars
 terraform/tfplan
+
+# Ansible: generated inventory, random secrets, downloaded collections
+ansible/inventory.ini
+ansible/.secrets/
+ansible/collections/

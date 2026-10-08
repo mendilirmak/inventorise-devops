@@ -1,0 +1,8 @@
+# Managed by Ansible.
+listen_addresses = 'localhost,{{ ansible_default_ipv4.address }}'
+password_encryption = scram-sha-256
+ssl = on                      # the Ubuntu default certificate; encrypts traffic
+wal_level = replica
+max_wal_senders = 5
+wal_keep_size = 256MB         # lets the standby catch up after a short outage
+hot_standby = on

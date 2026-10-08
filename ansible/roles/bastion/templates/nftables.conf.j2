@@ -1,0 +1,11 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible. Only NAT is handled here; allowed traffic is decided by
+# the AWS security groups.
+flush ruleset
+
+table ip nat {
+  chain postrouting {
+    type nat hook postrouting priority 100; policy accept;
+    ip saddr {{ private_subnet_cidr }} oifname "{{ ansible_default_ipv4.interface }}" masquerade
+  }
+}

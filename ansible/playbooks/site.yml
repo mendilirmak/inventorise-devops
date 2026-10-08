@@ -1,0 +1,57 @@
+# Configures every node. Run: ansible-playbook playbooks/site.yml
+# Order matters: the bastion goes first because it is the NAT box that the
+# private nodes need to download packages.
+- name: Bastion (SSH jump host and NAT)
+  hosts: bastion
+  become: true
+  roles: [common, bastion]
+
+- name: Base setup on all other nodes
+  hosts: all:!bastion
+  become: true
+  roles: [common]
+
+- name: Postgres primary, then the standby
+  hosts: postgres
+  become: true
+  serial: 1            # the standby copies from the primary, so one at a time
+  roles: [postgres]
+
+- name: k3s first server
+  hosts: control_plane[0]
+  become: true
+  roles: [k3s_server]
+
+- name: k3s other servers
+  hosts: control_plane[1:]
+  become: true
+  roles: [k3s_server]
+
+- name: k3s workers
+  hosts: workers
+  become: true
+  roles: [k3s_agent]
+
+- name: CI node
+  hosts: ci
+  become: true
+  roles: [ci]
+
+- name: Check the cluster and save a kubeconfig
+  hosts: control_plane[0]
+  become: true
+  tasks:
+    - name: Wait until every node is Ready
+      ansible.builtin.shell: "/usr/local/bin/k3s kubectl get nodes --no-headers | grep -cw Ready"
+      register: ready_nodes
+      until: ready_nodes.stdout | int == (groups['control_plane'] | length) + (groups['workers'] | length)
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Fetch the kubeconfig (stays on this machine, git-ignored)
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ playbook_dir }}/../.secrets/kubeconfig"
+        flat: true
+      no_log: true

@@ -1,0 +1,27 @@
+# The bastion is also the NAT box: private nodes send their internet traffic
+# through it (Terraform points the private route table at this instance).
+- name: Allow IP forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Install nftables
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+
+- name: NAT rule for the private subnet
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    mode: "0644"
+  notify: Reload nftables
+
+- name: Enable nftables at boot
+  ansible.builtin.service:
+    name: nftables
+    state: started
+    enabled: true

@@ -1,0 +1,16 @@
+# Settings shared by every host. Secrets are NOT here: they are generated on
+# first run into ansible/.secrets/ (git-ignored) by the lookups below.
+
+k3s_version: "v1.36.5+k3s1"
+private_subnet_cidr: "10.20.2.0/24"
+public_subnet_cidr: "10.20.1.0/24"
+
+# Random secrets, created once and then reused on every run.
+# `lookup('password', file)` writes the file if it is missing.
+k3s_token: "{{ lookup('ansible.builtin.password', playbook_dir + '/../.secrets/k3s_token chars=ascii_letters,digits length=48') }}"
+postgres_app_password: "{{ lookup('ansible.builtin.password', playbook_dir + '/../.secrets/postgres_app_password chars=ascii_letters,digits length=40') }}"
+postgres_replication_password: "{{ lookup('ansible.builtin.password', playbook_dir + '/../.secrets/postgres_replication_password chars=ascii_letters,digits length=40') }}"
+
+postgres_db: inventory
+postgres_app_user: inventory
+postgres_replication_user: replicator

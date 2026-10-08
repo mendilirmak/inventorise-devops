@@ -1,0 +1,99 @@
+# PostgreSQL 16 from the Ubuntu 24.04 repository. The first host in the
+# "postgres" group (inventorise-pg-1) is the primary, the second the standby.
+- name: Install PostgreSQL 16
+  ansible.builtin.apt:
+    name:
+      - postgresql-16
+      - postgresql-client-16
+      - python3-psycopg2   # lets Ansible's postgres modules talk to the database
+      - acl                # lets Ansible switch to the postgres user safely
+    state: present
+
+- name: Server settings
+  ansible.builtin.template:
+    src: inventorise.conf.j2
+    dest: /etc/postgresql/16/main/conf.d/10-inventorise.conf
+    owner: postgres
+    group: postgres
+    mode: "0644"
+  notify: Restart postgres
+
+- name: Who may connect (TLS only, password check with SCRAM)
+  ansible.builtin.blockinfile:
+    path: /etc/postgresql/16/main/pg_hba.conf
+    marker: "# {mark} ANSIBLE MANAGED inventorise"
+    block: |
+      hostssl {{ postgres_db }} {{ postgres_app_user }} {{ public_subnet_cidr }} scram-sha-256
+      hostssl replication {{ postgres_replication_user }} {{ hostvars[groups['postgres'][0]].ansible_default_ipv4.address }}/32 scram-sha-256
+      hostssl replication {{ postgres_replication_user }} {{ hostvars[groups['postgres'][1]].ansible_default_ipv4.address }}/32 scram-sha-256
+  notify: Reload postgres
+
+- name: Apply settings now
+  ansible.builtin.meta: flush_handlers
+
+- name: Make sure PostgreSQL runs
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+# ---- primary only -------------------------------------------------------
+- name: Primary - create users and database
+  when: inventory_hostname == groups['postgres'][0]
+  become_user: postgres
+  block:
+    - name: App user
+      community.postgresql.postgresql_user:
+        name: "{{ postgres_app_user }}"
+        password: "{{ postgres_app_password }}"
+        encrypted: true
+      no_log: true
+
+    - name: Replication user
+      community.postgresql.postgresql_user:
+        name: "{{ postgres_replication_user }}"
+        password: "{{ postgres_replication_password }}"
+        role_attr_flags: REPLICATION
+        encrypted: true
+      no_log: true
+
+    - name: Database
+      community.postgresql.postgresql_db:
+        name: "{{ postgres_db }}"
+        owner: "{{ postgres_app_user }}"
+
+# ---- standby only -------------------------------------------------------
+- name: Standby - copy the primary
+  when: inventory_hostname == groups['postgres'][1]
+  block:
+    - name: Has this node been set up as a standby already?
+      ansible.builtin.stat:
+        path: /var/lib/postgresql/16/main/standby.signal
+      register: standby_signal
+
+    - name: Stop PostgreSQL before replacing its data
+      ansible.builtin.service:
+        name: postgresql
+        state: stopped
+      when: not standby_signal.stat.exists
+
+    - name: Empty the data directory
+      ansible.builtin.shell: "rm -rf /var/lib/postgresql/16/main/*"
+      when: not standby_signal.stat.exists
+
+    - name: Copy everything from the primary (also writes standby.signal)
+      ansible.builtin.command: >
+        pg_basebackup -h {{ hostvars[groups['postgres'][0]].ansible_default_ipv4.address }}
+        -U {{ postgres_replication_user }} -D /var/lib/postgresql/16/main
+        -R -X stream -w
+      become_user: postgres
+      environment:
+        PGPASSWORD: "{{ postgres_replication_password }}"
+        PGSSLMODE: require
+      no_log: true
+      when: not standby_signal.stat.exists
+
+    - name: Start PostgreSQL as a standby
+      ansible.builtin.service:
+        name: postgresql
+        state: started

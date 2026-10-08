@@ -1,0 +1,12 @@
+# The CI node only gets Docker for now. Jenkins itself (pinned image,
+# plugins, credentials) is set up in Phase 5 together with the Jenkinsfile.
+- name: Install Docker
+  ansible.builtin.apt:
+    name: docker.io
+    state: present
+
+- name: Docker runs at boot
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true

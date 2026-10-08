@@ -1,0 +1,7 @@
+# Managed by Ansible.
+server: "https://{{ hostvars[groups['control_plane'][0]].ansible_default_ipv4.address }}:6443"
+token: "{{ k3s_token }}"
+node-ip: "{{ ansible_default_ipv4.address }}"
+node-label:
+  - "inventorise/role=worker"
+  - "ingress=true"

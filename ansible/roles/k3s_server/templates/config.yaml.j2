@@ -1,0 +1,25 @@
+# Managed by Ansible.
+token: "{{ k3s_token }}"
+node-ip: "{{ ansible_default_ipv4.address }}"
+{% if inventory_hostname == groups['control_plane'][0] %}
+# First server: creates the embedded etcd cluster.
+cluster-init: true
+{% else %}
+# Other servers: join the first one.
+server: "https://{{ hostvars[groups['control_plane'][0]].ansible_default_ipv4.address }}:6443"
+{% endif %}
+tls-san:
+{% for h in groups['control_plane'] %}
+  - "{{ hostvars[h].ansible_default_ipv4.address }}"
+{% endfor %}
+# We install ingress-nginx ourselves, so k3s's Traefik and its simple
+# load balancer are switched off.
+disable:
+  - traefik
+  - servicelb
+# Control-plane nodes only run the control plane, not app pods.
+node-taint:
+  - "node-role.kubernetes.io/control-plane=true:NoSchedule"
+write-kubeconfig-mode: "0600"
+# Kubernetes Secrets are encrypted inside etcd (closes the "base64 only" gap).
+secrets-encryption: true
