@@ -10,6 +10,7 @@ resource "aws_security_group" "bastion" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "bastion_ssh_admin" {
+  tags              = { Name = "inventorise-bastion-ssh-admin" }
   security_group_id = aws_security_group.bastion.id
   cidr_ipv4         = var.admin_cidr
   from_port         = 22
@@ -21,6 +22,7 @@ resource "aws_vpc_security_group_ingress_rule" "bastion_ssh_admin" {
 # Traffic from private nodes is routed through the bastion (NAT), so the
 # private subnet must be allowed to reach it.
 resource "aws_vpc_security_group_ingress_rule" "bastion_from_private" {
+  tags              = { Name = "inventorise-bastion-from-private" }
   security_group_id = aws_security_group.bastion.id
   cidr_ipv4         = var.private_subnet_cidr
   ip_protocol       = "-1"
@@ -28,6 +30,7 @@ resource "aws_vpc_security_group_ingress_rule" "bastion_from_private" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "bastion_all" {
+  tags              = { Name = "inventorise-bastion-all" }
   description       = "Outbound to anywhere (updates, image pulls)"
   security_group_id = aws_security_group.bastion.id
   cidr_ipv4         = "0.0.0.0/0"
@@ -43,6 +46,7 @@ resource "aws_security_group" "ssh_from_bastion" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh_from_bastion" {
+  tags = { Name = "inventorise-ssh-from-bastion" }
   #checkov:skip=CKV_AWS_24: False positive. This rule allows only the bastion security group, not 0.0.0.0/0.
   security_group_id            = aws_security_group.ssh_from_bastion.id
   referenced_security_group_id = aws_security_group.bastion.id
@@ -62,6 +66,7 @@ resource "aws_security_group" "k8s_nodes" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "k8s_nodes_self" {
+  tags                         = { Name = "inventorise-k8s-nodes-self" }
   security_group_id            = aws_security_group.k8s_nodes.id
   referenced_security_group_id = aws_security_group.k8s_nodes.id
   ip_protocol                  = "-1"
@@ -69,6 +74,7 @@ resource "aws_vpc_security_group_ingress_rule" "k8s_nodes_self" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "k8s_api_from_bastion" {
+  tags                         = { Name = "inventorise-k8s-api-from-bastion" }
   security_group_id            = aws_security_group.k8s_nodes.id
   referenced_security_group_id = aws_security_group.bastion.id
   from_port                    = 6443
@@ -78,6 +84,7 @@ resource "aws_vpc_security_group_ingress_rule" "k8s_api_from_bastion" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "k8s_nodes_all" {
+  tags              = { Name = "inventorise-k8s-nodes-all" }
   description       = "Outbound to anywhere (image pulls, updates)"
   security_group_id = aws_security_group.k8s_nodes.id
   cidr_ipv4         = "0.0.0.0/0"
@@ -93,6 +100,7 @@ resource "aws_security_group" "web" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "web_http" {
+  tags              = { Name = "inventorise-web-http" }
   security_group_id = aws_security_group.web.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
@@ -102,6 +110,7 @@ resource "aws_vpc_security_group_ingress_rule" "web_http" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "web_https" {
+  tags              = { Name = "inventorise-web-https" }
   security_group_id = aws_security_group.web.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 443
@@ -120,6 +129,7 @@ resource "aws_security_group" "postgres" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "postgres_from_workers" {
+  tags                         = { Name = "inventorise-postgres-from-workers" }
   security_group_id            = aws_security_group.postgres.id
   referenced_security_group_id = aws_security_group.k8s_nodes.id
   from_port                    = 5432
@@ -129,6 +139,7 @@ resource "aws_vpc_security_group_ingress_rule" "postgres_from_workers" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "postgres_replication" {
+  tags                         = { Name = "inventorise-postgres-replication" }
   security_group_id            = aws_security_group.postgres.id
   referenced_security_group_id = aws_security_group.postgres.id
   from_port                    = 5432
@@ -138,6 +149,7 @@ resource "aws_vpc_security_group_ingress_rule" "postgres_replication" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "postgres_all" {
+  tags              = { Name = "inventorise-postgres-all" }
   description       = "Outbound to anywhere (package updates)"
   security_group_id = aws_security_group.postgres.id
   cidr_ipv4         = "0.0.0.0/0"
@@ -153,6 +165,7 @@ resource "aws_security_group" "ci" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ci_jenkins_from_bastion" {
+  tags                         = { Name = "inventorise-ci-jenkins-from-bastion" }
   security_group_id            = aws_security_group.ci.id
   referenced_security_group_id = aws_security_group.bastion.id
   from_port                    = 8080
@@ -162,6 +175,7 @@ resource "aws_vpc_security_group_ingress_rule" "ci_jenkins_from_bastion" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "ci_all" {
+  tags              = { Name = "inventorise-ci-all" }
   description       = "Outbound to anywhere (Docker Hub, GitHub, packages)"
   security_group_id = aws_security_group.ci.id
   cidr_ipv4         = "0.0.0.0/0"
