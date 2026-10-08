@@ -13,3 +13,14 @@ skip-check:
   # High UID: postgres runs as UID 999, the official image's own user;
   # the app itself runs as UID 10001.
   - CKV_K8S_40
+  # Detailed CloudWatch monitoring: costs extra per instance (about $2 each).
+  # Prometheus already collects the metrics this project needs.
+  - CKV_AWS_126
+  # Port 80 is open to the world on purpose: the web entry point only
+  # redirects HTTP to HTTPS (ingress-nginx). Port 443 does the real work.
+  - CKV_AWS_260
+  # IAM roles on instances: no instance calls the AWS API, and IAM is not
+  # available to our CLI user (EC2-only account policy).
+  - CKV2_AWS_41
+  # VPC flow logs need CloudWatch or S3, which are outside the EC2-only scope.
+  - CKV2_AWS_11

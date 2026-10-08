@@ -29,3 +29,6 @@ sbom.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Terraform: real variable values (contain your home IP) and local state
+terraform/terraform.tfvars
