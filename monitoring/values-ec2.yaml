@@ -1,0 +1,12 @@
+# Extra settings for the EC2 cluster, applied on top of values.yaml.
+# k3s runs the scheduler, controller-manager, etcd and kube-proxy inside one
+# process, so the chart's separate scrape targets for them would only show
+# "down". Switch them off.
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false

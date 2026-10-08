@@ -1,0 +1,19 @@
+# The address of the Postgres PRIMARY (inventorise-pg-1). A Service without a
+# selector needs this object to know where to send traffic.
+#
+# Manual failover: promote the standby (inventorise-pg-2) and change the address
+# below to 10.20.2.181, then apply. ArgoCD or `kubectl apply -k` does the rest.
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres-external
+  namespace: inventory
+  labels:
+    kubernetes.io/service-name: postgres
+addressType: IPv4
+ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+endpoints:
+  - addresses: ["10.20.2.142"]

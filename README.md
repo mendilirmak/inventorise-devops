@@ -151,6 +151,44 @@ Prometheus data source.
 **Check it works:** run `scripts/load-test.sh` — request rate, CPU and
 then the replica count rise within a minute or two.
 
+## EC2 cluster (production-style demo)
+
+The demo target is a k3s cluster on nine EC2 instances in eu-north-1: a
+bastion, three control-plane nodes, two workers, two Postgres nodes (primary
+and standby) and a CI node. Everything is in code:
+
+| Folder / script | What it does |
+|---|---|
+| `terraform/` | Creates the network, security groups, instances and public IPs |
+| `ansible/` | Configures the nodes: k3s, Postgres replication, NAT, hardening (see `ansible/README.md`) |
+| `scripts/aws-instances.sh` | `start`, `stop`, `status` for all instances (stopped = no compute cost) |
+| `scripts/aws-shred.sh` | Deletes everything billable (`--destroy`), or just lists it |
+| `scripts/ec2-bootstrap.sh` | Installs ingress-nginx, cert-manager + private CA, Argo CD, monitoring and the app Secrets |
+| `k8s/overlays/ec2/` | The app for EC2: external Postgres, TLS-only database connection, HTTPS ingress |
+| `k8s/ec2-addons/` | Helm values and the private CA for the add-ons above |
+
+Order: `terraform apply` → `ansible-playbook playbooks/site.yml` → open an SSH
+tunnel to the Kubernetes API → `scripts/ec2-bootstrap.sh`. Read the header of
+each script for the exact commands.
+
+**Reach the cluster from your machine** (the control plane has no public
+address). In one terminal, with your SSH key loaded in the agent:
+
+```bash
+ssh -N -L 6443:<cp-1 private IP>:6443 ubuntu@<bastion public IP>
+export KUBECONFIG=~/inventorise/inventorise-devops/ansible/.secrets/kubeconfig
+kubectl get nodes
+```
+
+**Check it works:** all 5 nodes `Ready`; the ingress answers on both workers'
+public IPs (`curl -sk -o /dev/null -w '%{http_code}\n' https://<worker IP>/`
+returns 404 until the app is deployed); `kubectl get clusterissuer` shows
+`inventorise-ca` Ready.
+
+**Postgres failover (manual):** promote the standby (`pg_ctl promote` on
+`inventorise-pg-2`), then change the address in
+`k8s/overlays/ec2/postgres-endpoint.yaml` to its IP and apply the overlay.
+
 ## Start over / stop
 
 ```bash

@@ -1,0 +1,66 @@
+# EC2 cluster (k3s): the app runs in Kubernetes, but Postgres runs on its own
+# EC2 instances outside the cluster. Everything shared lives in ../../base.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - postgres-endpoint.yaml
+patches:
+  # 1. No in-cluster database on EC2.
+  - target: {kind: StatefulSet, name: postgres}
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: postgres
+        namespace: inventory
+  - target: {kind: NetworkPolicy, name: postgres-allow-app-only}
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: postgres-allow-app-only
+        namespace: inventory
+  # 2. The Service called "postgres" now points outside the cluster. It keeps
+  #    its name, so the app and the init container need no change. It loses
+  #    its pod selector and its "headless" setting; its address comes from
+  #    postgres-endpoint.yaml.
+  - target: {kind: Service, name: postgres}
+    patch: |-
+      - op: remove
+        path: /spec/selector
+      - op: remove
+        path: /spec/clusterIP
+  # 3. The database accepts TLS connections only (pg_hba "hostssl").
+  - target: {kind: Deployment, name: app}
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app
+        namespace: inventory
+      spec:
+        template:
+          spec:
+            containers:
+              - name: app
+                env:
+                  - name: DATABASE_URL
+                    value: postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=require
+  # 4. HTTPS: cert-manager issues the certificate from our private CA.
+  - target: {kind: Ingress, name: app}
+    patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: app
+        namespace: inventory
+        annotations:
+          cert-manager.io/cluster-issuer: inventorise-ca
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      spec:
+        tls:
+          - hosts: [inventory.local]
+            secretName: inventory-tls

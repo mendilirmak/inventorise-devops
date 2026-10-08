@@ -6,6 +6,7 @@
 #   scripts/monitoring-up.sh
 #
 # Run after scripts/minikube-up.sh (the app must exist to be scraped).
+# On the EC2 cluster: EXTRA_VALUES=monitoring/values-ec2.yaml scripts/monitoring-up.sh
 set -euo pipefail
 
 KUBE_PROMETHEUS_STACK_VERSION=91.9.0
@@ -34,6 +35,7 @@ helm upgrade --install kube-prometheus-stack kube-prometheus-stack \
   --version "$KUBE_PROMETHEUS_STACK_VERSION" \
   --namespace "$NAMESPACE" \
   --values "$REPO_DIR/monitoring/values.yaml" \
+  ${EXTRA_VALUES:+--values "$REPO_DIR/$EXTRA_VALUES"} \
   --wait --timeout 10m
 
 step "ServiceMonitor + Grafana dashboard"
