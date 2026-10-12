@@ -67,12 +67,13 @@ BASTION=""
 ssh_node() {  # <ip> <command...>
   local ip=$1
   shift
+  # -n: ssh must not read stdin, or it swallows the rest of the caller's loop input.
   if [[ $ip == "$BASTION" ]]; then
     # The command words are meant to be sent to the remote shell as they are.
     # shellcheck disable=SC2029
-    ssh "${SSH_OPTS[@]}" "ubuntu@$ip" "$@"
+    ssh -n "${SSH_OPTS[@]}" "ubuntu@$ip" "$@"
   else
-    ssh "${SSH_OPTS[@]}" -J "ubuntu@$BASTION" "ubuntu@$ip" "$@"
+    ssh -n "${SSH_OPTS[@]}" -J "ubuntu@$BASTION" "ubuntu@$ip" "$@"
   fi
 }
 
