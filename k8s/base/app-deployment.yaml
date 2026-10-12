@@ -30,6 +30,27 @@ spec:
         runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      # Keep the pods on different nodes, so one failed worker does not take
+      # the whole app down. ScheduleAnyway: never block a pod from starting
+      # (for example when only one worker is left).
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: inventory-app
+      # When a node stops answering, move its pods after 30 s instead of the
+      # default 5 minutes.
+      tolerations:
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 30
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 30
       initContainers:
         # Wait until Postgres answers, so a new pod does not crash-loop while
         # the database is still starting.
