@@ -1,0 +1,29 @@
+# HorizontalPodAutoscaler: keeps 2-5 app pods, adding pods when average CPU
+# goes over 60% of the CPU *request* (100m in app-deployment.yaml).
+# Needs metrics-server. Nodes are NOT autoscaled (out of scope).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: inventory-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleDown:
+      # Wait 2 minutes of low load before removing pods (default is 5), so
+      # the demo shows scale-down without a long wait.
+      stabilizationWindowSeconds: 120

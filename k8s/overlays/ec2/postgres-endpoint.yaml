@@ -1,0 +1,34 @@
+# Postgres runs outside the cluster, on two EC2 instances (primary and standby).
+# The app and the init container connect to the name "postgres"; this Service
+# gives that name an address. It has no pod selector, so the EndpointSlice
+# below says where traffic goes: the PRIMARY (inventorise-pg-1).
+#
+# Manual failover: promote the standby (inventorise-pg-2) and change the address
+# below to 10.20.2.181, then apply. ArgoCD or `kubectl apply -k` does the rest.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: inventorise
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres-external
+  namespace: inventory
+  labels:
+    kubernetes.io/service-name: postgres
+addressType: IPv4
+ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+endpoints:
+  - addresses: ["10.20.2.142"]
