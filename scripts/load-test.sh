@@ -28,6 +28,9 @@ HEY_VERSION=v0.1.4
 #    (hostAliases), so the certificate name matches;
 #  - runs with the same restricted security settings as the app.
 ingress_ip=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o 'jsonpath={.spec.clusterIP}')
+# --overrides replaces the whole container list, so the image and the command
+# are set inside it as well.
+command="go run github.com/rakyll/hey@$HEY_VERSION -z $DURATION -c $CONCURRENCY $TARGET"
 overrides=$(cat <<JSON
 {"spec": {
   "hostAliases": [{"ip": "$ingress_ip", "hostnames": ["$HOST"]}],
@@ -35,6 +38,8 @@ overrides=$(cat <<JSON
   "volumes": [{"name": "ca", "configMap": {"name": "inventorise-ca-cert"}}],
   "containers": [{
     "name": "load-test",
+    "image": "$GO_IMAGE",
+    "command": ["sh", "-c", "$command"],
     "securityContext": {"allowPrivilegeEscalation": false, "capabilities": {"drop": ["ALL"]}},
     "env": [
       {"name": "SSL_CERT_FILE", "value": "/ca/ca.crt"},
@@ -53,6 +58,4 @@ echo "Load: $CONCURRENCY clients for $DURATION -> $TARGET"
 kubectl run load-test --rm -i --restart=Never \
   --namespace inventory \
   --image="$GO_IMAGE" \
-  --overrides="$overrides" \
-  --command -- sh -c \
-  "go run github.com/rakyll/hey@$HEY_VERSION -z $DURATION -c $CONCURRENCY $TARGET"
+  --overrides="$overrides"
