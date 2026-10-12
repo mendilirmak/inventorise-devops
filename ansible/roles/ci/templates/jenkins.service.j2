@@ -1,0 +1,26 @@
+# Managed by Ansible (roles/ci). Runs Jenkins as a Docker container.
+#
+# Lab-only: the Docker socket is mounted into the container so the pipeline can
+# build images. Anyone who controls the pipeline therefore controls this node's
+# Docker daemon (root on the node). See docs/adr/004. The node has no public
+# address, and the Jenkins UI is reachable only through the bastion.
+[Unit]
+Description=Jenkins (CI)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Restart=always
+RestartSec=10
+ExecStartPre=-/usr/bin/docker rm -f jenkins
+# Published on the private address only (the security group also limits it).
+ExecStart=/usr/bin/docker run --rm --name jenkins \
+  --publish {{ ansible_facts['default_ipv4']['address'] }}:8080:8080 \
+  --volume /var/jenkins_home:/var/jenkins_home \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  --group-add {{ ansible_facts['getent_group']['docker'][1] }} \
+  {{ jenkins_image }}
+ExecStop=/usr/bin/docker stop jenkins
+
+[Install]
+WantedBy=multi-user.target
