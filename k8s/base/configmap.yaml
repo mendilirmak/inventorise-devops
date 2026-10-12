@@ -1,11 +1,11 @@
-# Non-secret settings for the app. Secrets live in the inventory-db and
-# inventory-app Secrets (see secret.example.yaml).
+# Non-secret settings for the app. Passwords and keys live in the Secrets
+# inventory-db and inventory-app (see secret.example.yaml).
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: inventory-config
   namespace: inventory
 data:
-  APP_ENV: prod             # secure cookies; the site is HTTPS only
+  APP_ENV: prod             # production mode: secure cookies, HTTPS only
   LOW_STOCK_THRESHOLD: "10"
   LOG_LEVEL: INFO

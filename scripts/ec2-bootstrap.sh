@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Installs the platform add-ons on the EC2 (k3s) cluster, once per cluster:
+# Installs the cluster add-ons on the EC2 (k3s) cluster, in this order:
 #   ingress-nginx -> cert-manager + private CA -> Argo CD -> Secrets -> monitoring
 # Safe to run again.
 #
-# Needs an SSH tunnel to the Kubernetes API, opened in another terminal
-# (it needs your SSH key passphrase, so this script cannot do it for you):
+# Needs an SSH tunnel to the Kubernetes API, opened in another terminal. It
+# asks for your SSH key passphrase, so the script cannot open it itself:
 #   ssh -N -L 6443:<cp-1 private IP>:6443 ubuntu@<bastion public IP>
 #
 #   scripts/ec2-bootstrap.sh
 set -euo pipefail
 
-# Pinned chart versions.
+# Chart versions (pinned).
 INGRESS_NGINX_CHART_VERSION=4.15.1
 CERT_MANAGER_VERSION=v1.21.2
 ARGOCD_CHART_VERSION=10.10.1
@@ -57,9 +57,9 @@ helm upgrade --install argocd argo-cd \
   --wait --timeout 8m
 
 step "App namespace and Secrets"
-# The database password was created by Ansible on the Postgres nodes. The
-# Kubernetes Secret must use the same one. It is passed in the environment of
-# the script, never on a command line or on screen.
+# Ansible created the database password on the Postgres nodes. The Kubernetes
+# Secret must hold the same password. It is passed through the environment, so
+# it never appears on the command line or on screen.
 if [[ ! -r $POSTGRES_PASSWORD_FILE ]]; then
   echo "Missing $POSTGRES_PASSWORD_FILE. Run the Ansible playbook first." >&2
   exit 1
@@ -67,19 +67,19 @@ fi
 POSTGRES_PASSWORD=$(<"$POSTGRES_PASSWORD_FILE") "$REPO_DIR/scripts/create-secrets.sh"
 
 step "Public CA certificate and CI access"
-# The CA certificate is public. It goes into a ConfigMap so the Jenkins smoke
-# test (and your laptop, see docs) can trust the private CA without reading
-# the CA's Secret (which also holds its private key).
+# The CA certificate is public, so it goes into a ConfigMap. The Jenkins smoke
+# test reads it to trust the private CA. We never copy the CA's Secret, because
+# that Secret also holds the private key.
 kubectl -n cert-manager get secret inventorise-ca -o 'jsonpath={.data.tls\.crt}' | base64 -d > /tmp/inventorise-ca.crt
 kubectl -n inventory create configmap inventorise-ca-cert --from-file=ca.crt=/tmp/inventorise-ca.crt \
   --dry-run=client -o yaml | kubectl apply -f -
 rm -f /tmp/inventorise-ca.crt
-# What Jenkins is allowed to do (read Argo CD status, run the smoke user script).
+# Limits what Jenkins may do in the cluster (see argocd/ci-access.yaml).
 kubectl apply -f "$REPO_DIR/argocd/ci-access.yaml"
 
 step "Argo CD application (k8s/overlays/ec2)"
-# Until the first pipeline run sets a real image tag, the app pods cannot pull
-# their image and show ImagePullBackOff. That is expected.
+# Until the first pipeline run sets a real image tag, the app pods show
+# ImagePullBackOff. That is expected.
 kubectl apply -f "$REPO_DIR/argocd/application-ec2.yaml"
 
 step "Monitoring (Prometheus + Grafana)"

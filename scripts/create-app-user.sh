@@ -21,10 +21,9 @@ if [[ -z ${APP_USER_PASSWORD:-} ]]; then
   fi
 fi
 
-# The command asks for the password twice (password + confirmation).
-# Only its result line is shown ("User ... created" or "Error: ..."); the
-# prompts and the app's startup log are dropped. If neither line appears,
-# grep fails and so does this script.
+# `flask create-user` asks for the password twice. Only its result line is
+# shown ("User ... created" or "Error: ..."); the prompts and the startup log
+# are dropped. If neither line appears, grep fails and so does this script.
 printf '%s\n%s\n' "$APP_USER_PASSWORD" "$APP_USER_PASSWORD" |
   kubectl -n "$NAMESPACE" exec -i deploy/app -c app -- flask create-user "$USERNAME" 2>&1 |
   grep -oE "(User '|Error: ).*"

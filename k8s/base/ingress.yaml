@@ -1,4 +1,4 @@
-# Routes http://<host>/ to the app Service through ingress-nginx.
+# Sends requests for the host to the app Service, through ingress-nginx.
 # The host is set per overlay (inventory.local on the EC2 cluster).
 apiVersion: networking.k8s.io/v1
 kind: Ingress

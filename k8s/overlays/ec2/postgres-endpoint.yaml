@@ -1,10 +1,10 @@
-# Postgres runs outside the cluster, on two EC2 instances (primary and standby).
-# The app and the init container connect to the name "postgres"; this Service
-# gives that name an address. It has no pod selector, so the EndpointSlice
-# below says where traffic goes: the PRIMARY (inventorise-pg-1).
+# Postgres runs outside the cluster, on two EC2 instances: the primary and a
+# standby. The app connects to the name "postgres". The Service below gives that
+# name a fixed address. It has no pod selector, so the EndpointSlice says where
+# traffic goes: the PRIMARY (inventorise-pg-1).
 #
-# Manual failover: promote the standby (inventorise-pg-2) and change the address
-# below to 10.20.2.181, then apply. ArgoCD or `kubectl apply -k` does the rest.
+# Manual failover: promote the standby (inventorise-pg-2), change the address
+# below to 10.20.2.181, and commit. Argo CD applies the change.
 apiVersion: v1
 kind: Service
 metadata:

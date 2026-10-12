@@ -1,5 +1,5 @@
-# Stable in-cluster address for the app pods: http://app.inventory.svc
-# ClusterIP = reachable only inside the cluster; outside traffic comes in
+# A stable address for the app pods inside the cluster: app.inventory.svc.
+# ClusterIP means only the cluster can reach it. Outside traffic comes in
 # through the Ingress.
 apiVersion: v1
 kind: Service
@@ -13,6 +13,6 @@ spec:
   selector:
     app.kubernetes.io/name: inventory-app
   ports:
-    - name: http          # named, so the Prometheus ServiceMonitor can refer to it
+    - name: http          # the name lets the Prometheus ServiceMonitor refer to it
       port: 80
       targetPort: http

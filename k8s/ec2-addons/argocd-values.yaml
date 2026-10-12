@@ -1,8 +1,8 @@
-# Argo CD (continuous delivery: keeps the cluster equal to what is in git).
-# It is not exposed on the internet. Reach it with:
+# Argo CD: keeps the cluster equal to what is in git (continuous delivery).
+# It is not exposed on the internet. Open its UI with:
 #   kubectl -n argocd port-forward svc/argocd-server 8443:443
 dex:
-  enabled: false             # no single sign-on needed
+  enabled: false             # no single sign-on (SSO) needed
 notifications:
   enabled: false
 configs:

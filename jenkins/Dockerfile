@@ -1,21 +1,20 @@
 # Jenkins for the CI node: the official LTS image plus the tools the pipeline
-# calls. Built on the CI node by Ansible (roles/ci).
+# calls. Ansible builds it on the CI node (ansible/roles/ci).
 #
-# Why JDK 21 and not the "lts-jdk17" tag from the plan: that tag stopped
-# receiving updates in March 2026 (current LTS releases are JDK 21 and 25
-# only), so it would miss security fixes.
+# JDK 21, not the "lts-jdk17" tag: that tag has not been rebuilt since March
+# 2026, so it would miss later security fixes. JDK 21 is current.
 FROM jenkins/jenkins:2.580.1-lts-jdk21
 
 USER root
 
-# Docker CLI: the pipeline builds and scans images by talking to the CI node's
-# Docker daemon through the mounted socket (lab-only, see docs/adr/004).
+# Docker CLI: the pipeline builds and scans images through the CI node's Docker
+# daemon, using the mounted socket (lab-only, see jenkins/README.md).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends docker-cli \
  && rm -rf /var/lib/apt/lists/*
 
 # kubectl: reads the Argo CD application status and runs the smoke-user script.
-# Downloaded with its published checksum, which is verified before install.
+# The download is checked against its published checksum before it is installed.
 ARG KUBECTL_VERSION=v1.36.1
 RUN curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
  && curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256" \
@@ -25,6 +24,6 @@ RUN curl -fsSLO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/ku
 
 USER jenkins
 
-# Plugins, installed at build time at the exact versions in plugins.txt.
+# Plugins, installed at build time at the exact versions listed in plugins.txt.
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt

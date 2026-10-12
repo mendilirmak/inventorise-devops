@@ -1,5 +1,5 @@
-# The bastion is also the NAT box: private nodes send their internet traffic
-# through it (Terraform points the private route table at this instance).
+# The bastion is also the NAT box. Private nodes send their internet traffic
+# through it, because Terraform points the private route table at this instance.
 - name: Allow IP forwarding
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward

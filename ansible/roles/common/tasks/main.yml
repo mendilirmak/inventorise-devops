@@ -12,7 +12,7 @@
     name:
       - ca-certificates
       - curl
-      - chrony              # keeps the clock right (certificates and etcd need it)
+      - chrony              # keeps the clock correct (certificates and etcd need it)
       - unattended-upgrades # installs security updates automatically
     state: present
 

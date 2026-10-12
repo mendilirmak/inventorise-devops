@@ -1,6 +1,6 @@
 # The CI node: Docker, plus Jenkins running as a container under systemd.
-# Jenkins is our own small image (jenkins/Dockerfile in the repo root): the
-# official LTS image plus the Docker CLI, kubectl and the pinned plugins.
+# Jenkins uses our own image (jenkins/Dockerfile): the official LTS image plus
+# the Docker CLI, kubectl and the pinned plugins.
 - name: Install Docker
   ansible.builtin.apt:
     name: docker.io
@@ -37,9 +37,9 @@
   when: jenkins_sources.changed or jenkins_image_present.rc != 0
   notify: Restart Jenkins
 
-# Jenkins data lives on the host, at the SAME path inside the container. That
-# way the pipeline can start tool containers that mount the workspace by its
-# path (the Docker daemon resolves paths on the host).
+# Jenkins data lives on the host, at the SAME path inside the container. The
+# pipeline starts tool containers that mount the workspace by path, and the
+# Docker daemon resolves those paths on the host.
 - name: Jenkins home folder (owned by the jenkins user, uid 1000)
   ansible.builtin.file:
     path: /var/jenkins_home

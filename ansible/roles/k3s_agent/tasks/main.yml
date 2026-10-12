@@ -1,5 +1,5 @@
-# Installs the pinned k3s binary (checked against the published checksum) and
-# runs it as a systemd service. No "curl | sh" installer script is used.
+# Installs the pinned k3s binary, checked against the published checksum, and
+# runs it as a systemd service. We do not use the "curl | sh" installer.
 - name: Download the k3s binary and check its SHA-256
   ansible.builtin.get_url:
     url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version | urlencode }}/k3s"

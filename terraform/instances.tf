@@ -1,4 +1,4 @@
-# The nine EC2 instances, one block per role. Sizes are from CLAUDE.md.
+# The nine EC2 instances, one block per role.
 
 resource "aws_key_pair" "cluster" {
   key_name   = "inventorise-cluster"
@@ -14,12 +14,12 @@ resource "aws_instance" "bastion" {
   subnet_id              = aws_subnet.public.id
   availability_zone      = var.availability_zone
   vpc_security_group_ids = [aws_security_group.bastion.id]
-  source_dest_check      = false # must be off, so it can forward traffic for private nodes
+  source_dest_check      = false # must be off so the bastion can forward private nodes' traffic
   ebs_optimized          = true
   monitoring             = false
 
   metadata_options {
-    # IMDSv2 only: blocks the simple credential theft through an SSRF bug.
+    # IMDSv2 only: a web-request bug cannot read the instance's credentials.
     http_tokens = "required"
   }
 
@@ -29,8 +29,7 @@ resource "aws_instance" "bastion" {
     encrypted   = true
   }
 
-  # Root disks get the same tag, so the shred script can find them even if the
-  # instance is gone (disks keep billing until deleted).
+  # Tag the root disk so aws-shred.sh finds it even after the instance is gone.
   volume_tags = { Project = "inventorise", Name = "inventorise-bastion-disk" }
 
   tags = { Name = "inventorise-bastion", Role = "bastion" }
@@ -49,7 +48,7 @@ resource "aws_instance" "control_plane" {
   monitoring                  = false
 
   metadata_options {
-    # IMDSv2 only: blocks the simple credential theft through an SSRF bug.
+    # IMDSv2 only: a web-request bug cannot read the instance's credentials.
     http_tokens = "required"
   }
 
@@ -59,8 +58,7 @@ resource "aws_instance" "control_plane" {
     encrypted   = true
   }
 
-  # Root disks get the same tag, so the shred script can find them even if the
-  # instance is gone (disks keep billing until deleted).
+  # Tag the root disk so aws-shred.sh finds it even after the instance is gone.
   volume_tags = { Project = "inventorise", Name = "inventorise-cp-${count.index + 1}-disk" }
 
   tags = { Name = "inventorise-cp-${count.index + 1}", Role = "control-plane" }
@@ -79,7 +77,7 @@ resource "aws_instance" "worker" {
   monitoring             = false
 
   metadata_options {
-    # IMDSv2 only: blocks the simple credential theft through an SSRF bug.
+    # IMDSv2 only: a web-request bug cannot read the instance's credentials.
     http_tokens = "required"
   }
 
@@ -89,8 +87,7 @@ resource "aws_instance" "worker" {
     encrypted   = true
   }
 
-  # Root disks get the same tag, so the shred script can find them even if the
-  # instance is gone (disks keep billing until deleted).
+  # Tag the root disk so aws-shred.sh finds it even after the instance is gone.
   volume_tags = { Project = "inventorise", Name = "inventorise-worker-${count.index + 1}-disk" }
 
   tags = { Name = "inventorise-worker-${count.index + 1}", Role = "worker" }
@@ -109,7 +106,7 @@ resource "aws_instance" "postgres" {
   monitoring                  = false
 
   metadata_options {
-    # IMDSv2 only: blocks the simple credential theft through an SSRF bug.
+    # IMDSv2 only: a web-request bug cannot read the instance's credentials.
     http_tokens = "required"
   }
 
@@ -119,8 +116,7 @@ resource "aws_instance" "postgres" {
     encrypted   = true
   }
 
-  # Root disks get the same tag, so the shred script can find them even if the
-  # instance is gone (disks keep billing until deleted).
+  # Tag the root disk so aws-shred.sh finds it even after the instance is gone.
   volume_tags = { Project = "inventorise", Name = "inventorise-pg-${count.index + 1}-disk" }
 
   # The first node is the primary, the second the standby. Ansible sets the roles.
@@ -139,7 +135,7 @@ resource "aws_instance" "ci" {
   monitoring                  = false
 
   metadata_options {
-    # IMDSv2 only: blocks the simple credential theft through an SSRF bug.
+    # IMDSv2 only: a web-request bug cannot read the instance's credentials.
     http_tokens = "required"
   }
 
@@ -149,15 +145,14 @@ resource "aws_instance" "ci" {
     encrypted   = true
   }
 
-  # Root disks get the same tag, so the shred script can find them even if the
-  # instance is gone (disks keep billing until deleted).
+  # Tag the root disk so aws-shred.sh finds it even after the instance is gone.
   volume_tags = { Project = "inventorise", Name = "inventorise-ci-disk" }
 
   tags = { Name = "inventorise-ci", Role = "ci" }
 }
 
-# Fixed public addresses for the bastion and the workers. The costs are
-# shown in STATUS.md; they are billed even when the instances are stopped.
+# Fixed public addresses for the bastion and the workers. They are billed even
+# while the instances are stopped.
 resource "aws_eip" "bastion" {
   domain     = "vpc"
   instance   = aws_instance.bastion.id
@@ -173,8 +168,8 @@ resource "aws_eip" "worker" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Each instance's primary network card is created by AWS, not by Terraform, so
-# it would stay unnamed. These tags name it after its instance.
+# AWS creates each instance's primary network card, not Terraform, so the card
+# would have no name. These tags name it after its instance.
 locals {
   all_instances = merge(
     { bastion = aws_instance.bastion, ci = aws_instance.ci },

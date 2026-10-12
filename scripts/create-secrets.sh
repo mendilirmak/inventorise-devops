@@ -2,7 +2,7 @@
 # Creates the two Secrets the app needs (run by scripts/ec2-bootstrap.sh).
 #   inventory-db  : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 #   inventory-app : SECRET_KEY
-# Values come from these env vars if set, otherwise strong random values
+# Values come from the env vars below if they are set; otherwise random values
 # are generated. Nothing is printed.
 #
 # An existing Secret is left alone: Postgres only reads its password when
@@ -16,8 +16,8 @@ random_hex() { python3 -c "import secrets; print(secrets.token_hex($1))"; }
 
 POSTGRES_USER=${POSTGRES_USER:-inventory}
 POSTGRES_DB=${POSTGRES_DB:-inventory}
-# Hex only: the password is placed inside DATABASE_URL, where characters
-# like @ : / would break it.
+# Letters and digits only: the password goes inside DATABASE_URL, where
+# characters such as @ : / would break the URL.
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-$(random_hex 24)}
 SECRET_KEY=${SECRET_KEY:-$(random_hex 32)}
 

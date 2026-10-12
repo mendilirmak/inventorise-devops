@@ -1,6 +1,6 @@
-# ingress-nginx on the EC2 cluster. There is no cloud load balancer: the
+# ingress-nginx on the EC2 cluster. There is no cloud load balancer. The
 # controller runs on each worker and listens on the node's own ports 80 and
-# 443 (hostPort), and the workers' Elastic IPs are the public entry point.
+# 443 (hostPort). The workers' Elastic IPs are the public entry point.
 controller:
   kind: DaemonSet            # one controller pod per worker
   hostPort:
@@ -8,7 +8,7 @@ controller:
   service:
     type: ClusterIP          # no LoadBalancer on this cluster
   nodeSelector:
-    ingress: "true"          # label set on the workers by Ansible
+    ingress: "true"          # label that Ansible puts on the workers
   resources:
     requests:
       cpu: 100m

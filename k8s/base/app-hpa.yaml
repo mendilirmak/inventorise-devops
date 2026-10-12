@@ -1,6 +1,6 @@
-# HorizontalPodAutoscaler: keeps 2-5 app pods, adding pods when average CPU
-# goes over 60% of the CPU *request* (100m in app-deployment.yaml).
-# Needs metrics-server. Nodes are NOT autoscaled (out of scope).
+# HorizontalPodAutoscaler: runs 2-5 app pods. It adds pods when average CPU
+# goes over 60% of the CPU request (100m, in app-deployment.yaml). It needs
+# metrics-server. Nodes are not autoscaled (out of scope).
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -24,6 +24,6 @@ spec:
           averageUtilization: 60
   behavior:
     scaleDown:
-      # Wait 2 minutes of low load before removing pods (default is 5), so
-      # the demo shows scale-down without a long wait.
+      # Wait 2 minutes of low load before removing pods (the default is 5), so
+      # a demo shows scale-down sooner.
       stabilizationWindowSeconds: 120

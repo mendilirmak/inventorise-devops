@@ -1,17 +1,17 @@
-// CI pipeline for the inventory app (runs on the Jenkins CI node).
-// Jenkins does CI: test, build, scan, push, and commit the new image tag to
-// git. Argo CD does CD: it sees the commit and updates the cluster. Jenkins
-// never runs `kubectl apply`.
+// CI pipeline for the inventory app. It runs on the Jenkins CI node.
+// Jenkins does CI: it tests, builds, scans, pushes the image, and commits the
+// new image tag to git. Argo CD does CD: it sees the commit and updates the
+// cluster. Jenkins never runs `kubectl apply`.
 //
-// Every tool runs in a pinned container, so a build does not depend on what is
-// installed on the CI node. Containers reach the workspace through the same
-// path the host sees (JENKINS_HOME is mounted at the same path, see roles/ci).
+// Each tool runs in a pinned container, so builds do not depend on what is
+// installed on the CI node. The workspace is mounted at the same path inside
+// the containers (see ansible/roles/ci).
 //
-// Credentials (created once in Jenkins, see jenkins/README.md):
-//   dockerhub      username + access token for Docker Hub (push)
-//   github-devops  username + token that may push to the devops repo only
-//   kubeconfig-ci  kubeconfig of a read-mostly service account (see argocd/ci-access.yaml)
-//   smoke-user     username + password of the app user the smoke test logs in as
+// Credentials (set up once in Jenkins, see jenkins/README.md):
+//   dockerhub      Docker Hub user and access token (push images)
+//   github-devops  GitHub user and token that may push to the devops repo
+//   kubeconfig-ci  kubeconfig for the jenkins-ci service account (see argocd/ci-access.yaml)
+//   smoke-user     user and password the smoke test logs in with
 
 pipeline {
   agent any
@@ -59,7 +59,7 @@ pipeline {
     stage('Secret scan') {
       steps {
         // Scans the whole git history of the app repo. Any finding fails the build.
-        // The GIT_CONFIG_* variables stop git complaining about the folder owner.
+        // GIT_CONFIG_* marks the mounted repo as safe (its owner differs inside the container).
         sh '''
           docker run --rm --user "$(id -u)" \
             -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
@@ -71,7 +71,7 @@ pipeline {
 
     stage('Lint') {
       steps {
-        // Creates one virtualenv in the workspace; the test stage reuses it.
+        // Creates a virtualenv in the workspace. The test stages reuse it.
         sh '''
           docker run --rm --user "$(id -u)" -e HOME=/tmp \
             -v "$WORKSPACE:/work" -w /work/app "$PYTHON_IMAGE" sh -c '
@@ -102,7 +102,7 @@ pipeline {
     stage('Image scan and SBOM') {
       steps {
         // The SBOM (software bill of materials) lists every package in the image.
-        // The scan fails the build on any CRITICAL vulnerability.
+        // The build fails if the image has a CRITICAL vulnerability.
         sh '''
           mkdir -p "$JENKINS_HOME/trivy-cache"
           DOCKER_GID=$(stat -c %g /var/run/docker.sock)
@@ -122,7 +122,7 @@ pipeline {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub',
                          usernameVariable: 'DH_USER', passwordVariable: 'DH_TOKEN')]) {
-          // A throw-away config folder keeps the login out of JENKINS_HOME.
+          // A temporary config folder keeps the login out of JENKINS_HOME.
           sh '''
             export DOCKER_CONFIG=$(mktemp -d)
             trap 'rm -rf "$DOCKER_CONFIG"' EXIT
@@ -135,8 +135,8 @@ pipeline {
 
     stage('IaC scan') {
       steps {
-        // Checkov reads Kubernetes and Terraform files for risky settings.
-        // Skipped checks, each with a reason, are in .checkov.yaml.
+        // Checkov checks the Kubernetes and Terraform files for risky settings.
+        // Skipped checks, each with a reason, are listed in .checkov.yaml.
         sh '''
           docker run --rm --user "$(id -u)" -v "$WORKSPACE/devops:/src" -w /src \
             "$CHECKOV_IMAGE" --config-file .checkov.yaml \
@@ -174,8 +174,8 @@ pipeline {
 
     stage('Sync and verify') {
       steps {
-        // Argo CD checks git about every 30 s (see k8s/ec2-addons/argocd-values.yaml).
-        // We wait until it has the new commit and reports Synced and Healthy.
+        // Argo CD polls git every 30 s (k8s/ec2-addons/argocd-values.yaml).
+        // Wait until it has this commit and reports Synced and Healthy.
         // If that does not happen within 180 s, the tag commit is reverted.
         withCredentials([file(credentialsId: 'kubeconfig-ci', variable: 'KUBECONFIG')]) {
           script {
@@ -219,10 +219,10 @@ pipeline {
           file(credentialsId: 'kubeconfig-ci', variable: 'KUBECONFIG'),
           usernamePassword(credentialsId: 'smoke-user', usernameVariable: 'SMOKE_USER', passwordVariable: 'SMOKE_PASSWORD')
         ]) {
-          // 1. Make sure the smoke user exists (the password goes in on stdin).
-          // 2. Trust the private CA (a public certificate, stored in a ConfigMap).
-          // 3. Call the app through ingress-nginx on a worker, with the real
-          //    hostname, so the certificate is checked for real.
+          // 1. Create the smoke user if it is missing. The password goes in on stdin.
+          // 2. Read the public CA certificate from the ConfigMap, to trust it.
+          // 3. Call the app through ingress-nginx on a worker, using the real
+          //    hostname, so the certificate is checked properly.
           sh '''
             APP_USER_PASSWORD="$SMOKE_PASSWORD" devops/scripts/create-app-user.sh "$SMOKE_USER"
             kubectl -n inventory get configmap inventorise-ca-cert -o 'jsonpath={.data.ca\\.crt}' > ca.crt

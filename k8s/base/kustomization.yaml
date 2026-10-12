@@ -1,6 +1,6 @@
 # Base manifests: the app, its Service, Ingress, autoscaler and network rules.
-# overlays/ec2 adds what is specific to the EC2 cluster (external Postgres,
-# HTTPS, image tag). Build with: kubectl kustomize k8s/overlays/ec2
+# overlays/ec2 adds what is specific to the EC2 cluster. Preview the result with:
+#   kubectl kustomize k8s/overlays/ec2
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: inventory
@@ -15,4 +15,4 @@ resources:
   - ingress.yaml
   - app-hpa.yaml
   - networkpolicy.yaml
-# secret.example.yaml is deliberately NOT listed: it is documentation only.
+# secret.example.yaml is not listed on purpose: it is documentation only.

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Creates the kubeconfig file that Jenkins uses (credential "kubeconfig-ci").
-# It logs in as the service account "jenkins-ci" (argocd/ci-access.yaml),
-# which can read Argo CD status and run the smoke-user script, nothing more.
+# Writes the kubeconfig that Jenkins uses (credential "kubeconfig-ci").
+# It logs in as the service account "jenkins-ci" (argocd/ci-access.yaml), which
+# can only read Argo CD status and run the smoke-user script.
 #
 #   scripts/make-ci-kubeconfig.sh <cp-1 private IP>
 #
-# Needs the SSH tunnel and ansible/.secrets/kubeconfig, like ec2-bootstrap.sh.
-# The file is written to ansible/.secrets/ci-kubeconfig (git-ignored, mode 600).
-# Upload it to Jenkins as a "Secret file" credential with ID kubeconfig-ci,
-# then delete it. The token is never printed.
+# Needs the SSH tunnel and ansible/.secrets/kubeconfig, as ec2-bootstrap.sh does.
+# Writes ansible/.secrets/ci-kubeconfig (git-ignored, mode 600). Upload it to
+# Jenkins as a "Secret file" credential with ID kubeconfig-ci, then delete it.
+# The token is never printed.
 set -euo pipefail
 
 CP_IP=${1:?usage: $0 <cp-1 private IP>}
@@ -23,7 +23,7 @@ if [[ -z $token || -z $ca ]]; then
   exit 1
 fi
 
-# The file is created private before the token is written into it.
+# Create the file as private before the token goes into it.
 umask 077
 cat > "$OUT" <<YAML
 apiVersion: v1

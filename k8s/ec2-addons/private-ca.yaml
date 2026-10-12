@@ -1,7 +1,7 @@
 # A private certificate authority (CA), run inside the cluster by cert-manager.
-# It signs the HTTPS certificate for inventory.local. Browsers do not know
-# this CA, so they show a warning until its certificate is trusted on the
-# machine (see docs/DEMO.md). Nothing leaves the cluster.
+# It signs the HTTPS certificate for inventory.local. Browsers do not trust it
+# by default, so they show a warning until its certificate is installed on the
+# machine. The CA's private key never leaves the cluster.
 #
 # 1. A self-signed issuer, used only once, to create the CA certificate.
 apiVersion: cert-manager.io/v1

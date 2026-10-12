@@ -1,6 +1,6 @@
-# Every plugin at an exact version (68 in all: the 5 we ask for plus what they need).
-# Top level: workflow-aggregator (Pipeline), git, credentials-binding, junit, timestamper.
-# To update: change the top-level names, rebuild, list the resolved versions (see README.md).
+# Plugins at exact versions. Five are requested directly: workflow-aggregator
+# (Pipeline), git, credentials-binding, junit and timestamper. The rest are
+# dependencies they pull in. To update, see jenkins/README.md.
 antisamy-markup-formatter:173.v680e3a_b_69ff3
 apache-httpcomponents-client-4-api:4.5.14-269.vfa_2321039a_83
 asm-api:9.11-224.v369c884f7a_a_b_

@@ -1,26 +1,23 @@
-# Checkov settings, used by the pipeline (checkov -d k8s/ and -d terraform/).
-# Every skipped check has a one-line reason. Keep this list short.
+# Checkov settings, used by the Jenkins pipeline (IaC scan stage).
+# Every skipped check needs a reason. Keep this list short.
 skip-check:
-  # Image pull policy "Always": our tags are immutable (git commit SHA, exact
-  # upstream versions), so a cached image is always the right one.
+  # Image pull policy "Always": each image tag is a unique commit SHA, so a
+  # cached copy is never out of date.
   - CKV_K8S_15
-  # Secrets as files instead of env vars: the app is configured only through
-  # env vars (12-factor), and the official postgres image reads env vars.
+  # Secrets as env vars instead of files: the app reads all its settings from
+  # env vars (12-factor). Mounting secrets as files is a later improvement.
   - CKV_K8S_35
-  # Image digest: images are pinned to exact tags; digests would make the
-  # manifests hard to read for a teaching project. Production: pin digests.
+  # Image digest: images are pinned to exact tags. Pinning digests is the
+  # stricter production choice; tags keep the manifests readable.
   - CKV_K8S_43
-  # High UID: postgres runs as UID 999, the official image's own user;
-  # the app itself runs as UID 10001.
-  - CKV_K8S_40
-  # Detailed CloudWatch monitoring: costs extra per instance (about $2 each).
-  # Prometheus already collects the metrics this project needs.
+  # Detailed CloudWatch monitoring costs extra per instance (about $2 each).
+  # Prometheus already collects the metrics we need.
   - CKV_AWS_126
-  # Port 80 is open to the world on purpose: the web entry point only
-  # redirects HTTP to HTTPS (ingress-nginx). Port 443 does the real work.
+  # Port 80 is open to the world on purpose: it only redirects to HTTPS.
+  # Port 443 does the real work.
   - CKV_AWS_260
-  # IAM roles on instances: no instance calls the AWS API, and IAM is not
-  # available to our CLI user (EC2-only account policy).
+  # IAM roles for instances: no instance calls the AWS API, and our CLI user
+  # may use EC2 only (see the IAM policy in CLAUDE.md).
   - CKV2_AWS_41
-  # VPC flow logs need CloudWatch or S3, which are outside the EC2-only scope.
+  # VPC flow logs need CloudWatch or S3, which are outside our EC2-only scope.
   - CKV2_AWS_11

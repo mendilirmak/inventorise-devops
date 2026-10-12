@@ -1,5 +1,5 @@
-# The Flask app (API + HTML UI). The image tag is set at deploy time
-# (the Jenkins pipeline commits it to the overlay), never "latest".
+# The Flask app (API and HTML UI). The image tag is set per overlay, by the
+# Jenkins pipeline. It is never "latest".
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,12 +8,12 @@ metadata:
   labels:
     app.kubernetes.io/name: inventory-app
 spec:
-  # No "replicas" here on purpose: the HorizontalPodAutoscaler (app-hpa.yaml)
-  # owns the count (2-5). A fixed number here would reset it on every deploy.
-  revisionHistoryLimit: 5          # old versions kept for `kubectl rollout undo`
+  # No "replicas" here on purpose: the autoscaler (app-hpa.yaml) sets the count.
+  # A fixed number here would reset it on every deploy.
+  revisionHistoryLimit: 5          # old versions kept, for `kubectl rollout undo`
   strategy:
     rollingUpdate:
-      maxUnavailable: 0            # never drop below the current pod count
+      maxUnavailable: 0            # never fewer running pods than now during a deploy
       maxSurge: 1
   selector:
     matchLabels:
@@ -23,16 +23,16 @@ spec:
       labels:
         app.kubernetes.io/name: inventory-app
     spec:
-      automountServiceAccountToken: false   # the app never talks to the Kubernetes API
+      automountServiceAccountToken: false   # the app does not call the Kubernetes API
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001           # the "app" user created in the Dockerfile
+        runAsUser: 10001           # the "app" user from the Dockerfile
         runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       initContainers:
-        # Wait for Postgres before starting, so the first deploy does not
-        # crash-loop while the database is still initialising.
+        # Wait until Postgres answers, so a new pod does not crash-loop while
+        # the database is still starting.
         - name: wait-for-postgres
           image: postgres:16.15
           imagePullPolicy: IfNotPresent
@@ -72,13 +72,13 @@ spec:
               valueFrom: {secretKeyRef: {name: inventory-db, key: POSTGRES_PASSWORD}}
             - name: POSTGRES_DB
               valueFrom: {secretKeyRef: {name: inventory-db, key: POSTGRES_DB}}
-            # $(VAR) is filled in by Kubernetes from the variables above.
+            # Kubernetes fills in $(VAR) from the variables above.
             - name: DATABASE_URL
               value: postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)
             - name: SECRET_KEY
               valueFrom: {secretKeyRef: {name: inventory-app, key: SECRET_KEY}}
-          # The HPA measures CPU as a percentage of this request, so the
-          # request must be set or autoscaling does nothing.
+          # The autoscaler measures CPU as a percentage of this request. Without
+          # a request, autoscaling does nothing.
           resources:
             requests:
               cpu: 100m
@@ -86,13 +86,13 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-          # Not ready = no traffic. Fails while the database is unreachable.
+          # Not ready means no traffic. Fails while the database is unreachable.
           readinessProbe:
             httpGet: {path: /health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-          # Not alive = restart the container. Only checks the process itself,
-          # so a database outage does not cause a restart loop.
+          # Not alive means restart the container. It checks only the process, so
+          # a database outage does not cause a restart loop.
           livenessProbe:
             httpGet: {path: /health/live, port: http}
             initialDelaySeconds: 10

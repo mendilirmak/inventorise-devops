@@ -10,8 +10,8 @@
 # How it works
 #   1. `terraform destroy` removes everything Terraform manages.
 #   2. A second pass looks for anything tagged Project=inventorise that is
-#      still alive (for example if the Terraform state was lost, or something
-#      was created by hand). It lists the billable kinds:
+#      still alive (for example after losing the Terraform state, or after
+#      something was created by hand). It checks these billable kinds:
 #        instances, disks (EBS volumes), Elastic IPs, snapshots, AMIs, NAT gateways.
 #      With --force it deletes them. Nothing without the tag is ever touched.
 #

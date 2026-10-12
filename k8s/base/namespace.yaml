@@ -1,6 +1,6 @@
-# Everything for the app lives in its own namespace.
-# Pod Security Admission "restricted": Kubernetes itself refuses any pod
-# that runs as root, can gain privileges, or skips the seccomp filter.
+# The app's own namespace.
+# Pod Security "restricted": Kubernetes refuses any pod that runs as root, can
+# gain privileges, or skips the seccomp filter.
 apiVersion: v1
 kind: Namespace
 metadata:

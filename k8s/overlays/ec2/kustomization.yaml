@@ -1,4 +1,4 @@
-# The EC2 cluster (k3s). The app runs in Kubernetes; Postgres runs on its own
+# The EC2 cluster (k3s). The app runs in Kubernetes. Postgres runs on its own
 # EC2 instances outside the cluster (see postgres-endpoint.yaml). Everything
 # shared lives in ../../base.
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -6,13 +6,13 @@ kind: Kustomization
 resources:
   - ../../base
   - postgres-endpoint.yaml
-# The image tag. The Jenkins pipeline rewrites the newTag line after every
-# successful build (stage "Update GitOps repo"). Do not edit it by hand.
+# The image tag. The Jenkins pipeline rewrites newTag after every successful
+# build (stage "Update GitOps repo"). Do not edit it by hand.
 images:
   - name: dusterius/inventory-app
     newTag: "set-by-pipeline"
 patches:
-  # 1. The database accepts TLS connections only (pg_hba "hostssl").
+  # 1. The app connects to Postgres over TLS (sslmode=require).
   - target: {kind: Deployment, name: app}
     patch: |-
       apiVersion: apps/v1

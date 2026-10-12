@@ -6,12 +6,11 @@
 #
 # Watch it in another terminal:  kubectl -n inventory get hpa app -w
 #
-# `hey` (an HTTP load generator) runs as a temporary pod INSIDE the cluster
-# and sends requests through ingress-nginx over HTTPS, the same path real
-# users take.
-# Running it inside avoids the port-forward, which would be the bottleneck.
-# It is built from source with a pinned version; Go verifies the download
-# against its public checksum database.
+# `hey` (an HTTP load generator) runs as a temporary pod inside the cluster.
+# It sends requests through ingress-nginx over HTTPS, the same path real users
+# take. Running inside the cluster avoids a port-forward, which would be the
+# bottleneck. hey is built from source at a pinned version; Go checks the
+# download against its public checksum database.
 set -euo pipefail
 
 DURATION=${DURATION:-3m}
@@ -21,14 +20,13 @@ TARGET=${TARGET:-https://$HOST/login}
 GO_IMAGE=golang:1.27.1-alpine
 HEY_VERSION=v0.1.4
 
-# The site is HTTPS only (plain HTTP is redirected), and its certificate comes
-# from our private CA. So the load pod:
+# The site is HTTPS only (plain HTTP redirects), and its certificate comes from
+# our private CA. So the load pod:
 #  - runs in the `inventory` namespace, to read the public CA certificate from
 #    the ConfigMap `inventorise-ca-cert` and trust it (SSL_CERT_FILE);
 #  - maps the name inventory.local to the ingress controller's cluster address
 #    (hostAliases), so the certificate name matches;
-#  - has the same restricted security settings as the app (the namespace
-#    enforces Pod Security "restricted").
+#  - runs with the same restricted security settings as the app.
 ingress_ip=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o 'jsonpath={.spec.clusterIP}')
 overrides=$(cat <<JSON
 {"spec": {

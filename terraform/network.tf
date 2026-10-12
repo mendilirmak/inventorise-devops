@@ -1,4 +1,4 @@
-# A dedicated VPC, not the default one, so the layout is visible in code.
+# Our own VPC (not the default one), so the network layout is visible in code.
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -42,8 +42,8 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private subnet: outbound traffic goes to the bastion, which acts as the
-# NAT box (see ansible/roles/bastion). This replaces a paid NAT Gateway.
+# Private subnet: outbound traffic goes to the bastion, which acts as the NAT
+# box (see ansible/roles/bastion). This avoids a paid NAT Gateway.
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
   route {

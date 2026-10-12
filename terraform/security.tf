@@ -19,8 +19,8 @@ resource "aws_vpc_security_group_ingress_rule" "bastion_ssh_admin" {
   description       = "SSH from the admin home IP"
 }
 
-# Traffic from private nodes is routed through the bastion (NAT), so the
-# private subnet must be allowed to reach it.
+# Private nodes reach the internet through the bastion (NAT), so it must accept
+# traffic from the private subnet.
 resource "aws_vpc_security_group_ingress_rule" "bastion_from_private" {
   tags              = { Name = "inventorise-bastion-from-private" }
   security_group_id = aws_security_group.bastion.id
@@ -56,8 +56,8 @@ resource "aws_vpc_security_group_ingress_rule" "ssh_from_bastion" {
   description                  = "SSH from the bastion"
 }
 
-# Kubernetes nodes (control plane and workers) talk to each other freely
-# inside this group: API, etcd, kubelet, pod networking.
+# Kubernetes nodes (control plane and workers) may talk to each other freely
+# inside this group: API, etcd, kubelet and pod traffic.
 resource "aws_security_group" "k8s_nodes" {
   description = "Kubernetes nodes talk to each other inside the cluster"
   name        = "inventorise-k8s-nodes"
@@ -166,7 +166,7 @@ resource "aws_vpc_security_group_egress_rule" "postgres_all" {
   ip_protocol       = "-1"
 }
 
-# CI node: Jenkins web UI reachable only from the bastion (SSH tunnel).
+# CI node: the Jenkins web UI is reachable only from the bastion (via an SSH tunnel).
 resource "aws_security_group" "ci" {
   description = "CI node: Jenkins UI from the bastion only"
   name        = "inventorise-ci"
@@ -192,8 +192,8 @@ resource "aws_vpc_security_group_egress_rule" "ci_all" {
   ip_protocol       = "-1"
 }
 
-# The VPC's built-in default security group is emptied, so nothing can
-# accidentally use it. No rules means it allows no traffic.
+# The VPC's default security group has no rules, so nothing can use it by
+# accident.
 resource "aws_default_security_group" "main" {
   vpc_id = aws_vpc.main.id
   tags   = { Name = "inventorise-default-unused" }

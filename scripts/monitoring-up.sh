@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Installs Prometheus + Grafana (kube-prometheus-stack) into the
-# "monitoring" namespace, then our ServiceMonitor and Grafana dashboard.
+# Installs Prometheus and Grafana (kube-prometheus-stack) in the "monitoring"
+# namespace, then our ServiceMonitor and Grafana dashboard.
 # Safe to run again.
 #
 #   scripts/monitoring-up.sh
@@ -23,7 +23,7 @@ if kubectl -n "$NAMESPACE" get secret grafana-admin >/dev/null 2>&1; then
   echo "secret/grafana-admin already exists - left unchanged"
 else
   password=$(python3 -c "import secrets; print(secrets.token_urlsafe(24))")
-  # Passed through a file descriptor, so it never shows in the process list.
+  # Passed through a file descriptor, so it never appears in the process list.
   kubectl -n "$NAMESPACE" create secret generic grafana-admin \
     --from-env-file=<(printf 'admin-user=admin\nadmin-password=%s\n' "$password")
   unset password

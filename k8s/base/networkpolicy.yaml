@@ -1,10 +1,10 @@
-# Network rules ("firewall" between pods). k3s enforces them with its built-in
-# network policy controller. Postgres runs outside the cluster, so its access
-# rule is an AWS security group (terraform/security.tf), not a policy here.
+# Network rules (a "firewall" between pods), enforced by k3s.
+# Postgres runs outside the cluster, so its access rule is an AWS security
+# group (terraform/security.tf) instead.
 #
-# App pods accept traffic only from ingress-nginx (user requests) and from
-#    the monitoring namespace (Prometheus scraping /metrics). Kubernetes
-#    health probes come from the node itself and are always allowed.
+# App pods accept traffic only from ingress-nginx (user requests) and from the
+# monitoring namespace (Prometheus scraping /metrics). Kubernetes health
+# checks come from the node itself and are always allowed.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

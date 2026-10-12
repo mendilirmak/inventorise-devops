@@ -7,8 +7,9 @@
 #   scripts/aws-instances.sh start     # starts all, waits until running
 #   scripts/aws-instances.sh stop      # stops all, waits until stopped
 #
-# While the account's 16-vCPU limit is not raised, only eight of the nine
-# instances can run at once. Leave one out with EXCLUDE (names, comma-separated):
+# The account allows 20 vCPUs in this region, enough for all nine instances.
+# If the limit is ever lowered, leave instances out with EXCLUDE (names,
+# comma-separated), for example:
 #   EXCLUDE=inventorise-worker-2 scripts/aws-instances.sh start
 set -euo pipefail
 

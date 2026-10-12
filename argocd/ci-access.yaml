@@ -1,6 +1,6 @@
 # What Jenkins may do in the cluster. Jenkins logs in as the service account
-# "jenkins-ci" with the token below. It cannot change anything outside the
-# `inventory` namespace and cannot read any Secret.
+# "jenkins-ci". Its rights are limited to the `inventory` namespace, plus
+# read-only access to Argo CD applications. It cannot read any Secret.
 #
 #   Needed for                         Permission
 #   --------------------------------   ----------------------------------------
@@ -10,20 +10,20 @@
 #   Smoke stage: find a worker         list pods in ingress-nginx (their node IP)
 #
 # Accepted risk: "exec into pods" lets the token run commands in the app pods,
-# which hold the database password in their environment. It is limited to one
-# namespace, the token lives only in Jenkins, and the CI node has no public
-# address. The production fix is a dedicated, audited user-management job.
+# and those pods hold the database password. The risk is limited to one
+# namespace, the token is stored only in Jenkins, and the CI node has no public
+# address. Production fix: a separate, audited job for creating users.
 #
-# Applied by scripts/ec2-bootstrap.sh. Not part of the overlay, so Argo CD
-# does not manage (or prune) it.
+# Applied by scripts/ec2-bootstrap.sh. It is outside the overlay, so Argo CD
+# does not manage or prune it.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: jenkins-ci
   namespace: inventory
 ---
-# Kubernetes does not create a long-lived token for a service account by itself.
-# This Secret asks for one. Read it with scripts/make-ci-kubeconfig.sh.
+# Kubernetes does not create a token for a service account by itself. This
+# Secret asks for one. scripts/make-ci-kubeconfig.sh reads it.
 apiVersion: v1
 kind: Secret
 metadata:

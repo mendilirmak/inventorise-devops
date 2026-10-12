@@ -5,7 +5,7 @@ kind: Kustomization
 resources:
   - servicemonitor.yaml
 # The dashboard JSON becomes a ConfigMap. Grafana's sidecar loads every
-# ConfigMap with the label grafana_dashboard: "1" automatically.
+# ConfigMap with the label grafana_dashboard: "1".
 configMapGenerator:
   - name: inventory-dashboard
     namespace: monitoring

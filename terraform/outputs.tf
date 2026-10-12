@@ -1,4 +1,4 @@
-# Values Ansible and the scripts need. Printed after `terraform apply`.
+# Values that Ansible and the scripts need. Printed after `terraform apply`.
 
 output "bastion_public_ip" {
   description = "SSH entry point. Also the public address for the NAT box."

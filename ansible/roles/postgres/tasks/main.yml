@@ -1,11 +1,11 @@
 # PostgreSQL 16 from the Ubuntu 24.04 repository. The first host in the
-# "postgres" group (inventorise-pg-1) is the primary, the second the standby.
+# "postgres" group (inventorise-pg-1) is the primary; the second is the standby.
 - name: Install PostgreSQL 16
   ansible.builtin.apt:
     name:
       - postgresql-16
       - postgresql-client-16
-      - python3-psycopg2   # lets Ansible's postgres modules talk to the database
+      - python3-psycopg2   # lets Ansible's PostgreSQL modules talk to the database
       - acl                # lets Ansible switch to the postgres user safely
     state: present
 
