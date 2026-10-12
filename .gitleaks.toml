@@ -1,0 +1,7 @@
+# gitleaks settings for this repo: all default rules, plus one exception.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Jenkins plugin versions look like random keys but are public version numbers"
+paths = ['''jenkins/plugins\.txt''']
