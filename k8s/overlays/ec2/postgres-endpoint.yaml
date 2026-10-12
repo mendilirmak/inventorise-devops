@@ -32,3 +32,6 @@ ports:
     protocol: TCP
 endpoints:
   - addresses: ["10.20.2.142"]
+    # The API server adds this field itself. Writing it here stops Argo CD
+    # from reporting a difference that is not a real change.
+    conditions: {}
