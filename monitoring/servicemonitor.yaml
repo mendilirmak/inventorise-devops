@@ -1,0 +1,23 @@
+# Tells Prometheus to scrape the app's /metrics every 15 s, on every pod
+# behind the "app" Service. The NetworkPolicy in k8s/base allows this
+# because Prometheus runs in the "monitoring" namespace.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: inventory-app
+  namespace: inventory
+  labels:
+    app.kubernetes.io/name: inventory-app
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-app
+  endpoints:
+    - port: http          # the named port on the app Service
+      path: /metrics
+      interval: 15s
+      # Keep the app's own "endpoint" label (the Flask route name). Without
+      # this, Prometheus overwrites it with the Service port name ("http")
+      # and the per-endpoint dashboard panels collapse into one line.
+      # Safe because the metrics come from our own app.
+      honorLabels: true

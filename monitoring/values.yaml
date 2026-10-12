@@ -1,0 +1,35 @@
+# Settings for the kube-prometheus-stack Helm chart (version pinned in
+# scripts/monitoring-up.sh). Only what differs from the chart defaults.
+
+# No alerting in this project (Alertmanager rules are out of scope), so the
+# Alertmanager and the chart's built-in alert rules are switched off.
+alertmanager:
+  enabled: false
+defaultRules:
+  create: false
+
+grafana:
+  # The admin login comes from the Secret "grafana-admin" (created with a
+  # random password by scripts/monitoring-up.sh), never from this file.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # The chart's own Kubernetes dashboards stay on; ours is added by the
+  # sidecar from any ConfigMap labelled grafana_dashboard: "1".
+  defaultDashboardsEnabled: true
+
+prometheus:
+  prometheusSpec:
+    # Pick up ServiceMonitors from every namespace, not only those with
+    # this Helm release's label - so our app's ServiceMonitor is found.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    # Keep 2 days of data: enough for the demo, small disk.
+    retention: 2d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
