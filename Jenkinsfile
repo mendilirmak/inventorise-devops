@@ -138,6 +138,9 @@ pipeline {
         // Checkov checks the Kubernetes and Terraform files for risky settings.
         // Skipped checks, each with a reason, are listed in .checkov.yaml.
         sh '''
+          # Checkov writes one file per output. A missing folder makes it write
+          # the report to a file named "reports", so create the folder first.
+          mkdir -p "$WORKSPACE/devops/reports"
           docker run --rm --user "$(id -u)" -v "$WORKSPACE/devops:/src" -w /src \
             "$CHECKOV_IMAGE" --config-file .checkov.yaml \
             --directory k8s --directory terraform \
