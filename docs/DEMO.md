@@ -23,7 +23,20 @@ Each step says what to show and what to say.
    ```
 4. **Check the site and the data:** open https://inventory.local/health/ready. It should show `{"status":"ok"}` with no warning. Log in and check that the dashboard has about 40 products.
 5. **Reset the demo data if needed:** `kubectl -n inventory exec -i deploy/app -c app -- python - < docs/seed-demo-data.py` adds the shop data again, if it's missing. It skips products that already exist.
-6. **Open these windows in advance:** the browser on the dashboard, Grafana (see step 7), the Argo CD UI (step 4), the Jenkins job, and a terminal with `kubectl -n inventory get hpa app -w`.
+6. **Save the CA certificate** for the API step, if the file is not there yet:
+   ```bash
+   mkdir -p ~/inventorise/inventorise-docs
+   kubectl -n inventory get configmap inventorise-ca-cert -o jsonpath='{.data.ca\.crt}' > ~/inventorise/inventorise-docs/ca.crt
+   ```
+7. **Spread the app pods over both workers.** A rolling restart does it, and the
+   failover step needs it:
+   ```bash
+   kubectl -n inventory rollout restart deploy/app
+   kubectl -n inventory rollout status deploy/app
+   kubectl -n inventory get pods -o wide    # one pod on inventorise-worker-1, one on inventorise-worker-2
+   ```
+   If both pods are on the same worker, stop the other worker in step 7 of the demo instead.
+8. **Open these windows in advance:** the browser on the dashboard, Grafana (see step 7), the Argo CD UI (step 4), the Jenkins job, and a terminal with `kubectl -n inventory get hpa app -w`.
 
 ## 1. The idea (1 minute)
 
@@ -87,7 +100,7 @@ If the build is still running at the end of the demo, show the finished run from
 
 ## 7. Worker failure (4 minutes)
 
-1. Say: "I'll switch off one of the two workers. The app should stay up on the other one."
+1. Check first with `kubectl -n inventory get pods -o wide` that each worker runs a pod. Then say: "I'll switch off one of the two workers. The app should stay up on the other one."
 2. Find the instance ID: `aws ec2 describe-instances --profile inventorise --region eu-north-1 --filters Name=tag:Name,Values=inventorise-worker-1 --query 'Reservations[].Instances[].InstanceId' --output text`
 3. Stop it: `aws ec2 stop-instances --profile inventorise --region eu-north-1 --instance-ids <id>`
 4. Watch the pods and the node: `kubectl get nodes -w` and `kubectl -n inventory get pods -o wide`. The node goes NotReady, and the pods are replaced on the other worker.
