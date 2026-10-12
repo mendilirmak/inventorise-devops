@@ -1,0 +1,22 @@
+# Argo CD Application: "keep the cluster equal to k8s/overlays/ec2 in git".
+# Jenkins only changes the image tag in that folder; Argo CD does the rest.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: inventorise-ec2
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mendilirmak/inventorise-devops.git
+    targetRevision: main
+    path: k8s/overlays/ec2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: inventory
+  syncPolicy:
+    automated:
+      prune: true       # delete cluster objects that were removed from git
+      selfHeal: true    # undo changes made by hand with kubectl
+    syncOptions:
+      - CreateNamespace=false   # the namespace comes from k8s/base/namespace.yaml

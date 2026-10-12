@@ -1,0 +1,116 @@
+# What Jenkins may do in the cluster. Jenkins logs in as the service account
+# "jenkins-ci" with the token below. It cannot change anything outside the
+# `inventory` namespace and cannot read any Secret.
+#
+#   Needed for                         Permission
+#   --------------------------------   ----------------------------------------
+#   Sync and verify stage              read Argo CD applications (argocd)
+#   Smoke stage: create smoke user     get pods/deployments, exec into pods (inventory)
+#   Smoke stage: trust the private CA  read the public CA certificate ConfigMap (inventory)
+#   Smoke stage: find a worker         list pods in ingress-nginx (their node IP)
+#
+# Accepted risk: "exec into pods" lets the token run commands in the app pods,
+# which hold the database password in their environment. It is limited to one
+# namespace, the token lives only in Jenkins, and the CI node has no public
+# address. The production fix is a dedicated, audited user-management job.
+#
+# Applied by scripts/ec2-bootstrap.sh. Not part of the overlay, so Argo CD
+# does not manage (or prune) it.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-ci
+  namespace: inventory
+---
+# Kubernetes does not create a long-lived token for a service account by itself.
+# This Secret asks for one. Read it with scripts/make-ci-kubeconfig.sh.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins-ci-token
+  namespace: inventory
+  annotations:
+    kubernetes.io/service-account.name: jenkins-ci
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-ci
+  namespace: inventory
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [inventorise-ca-cert]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-ci
+  namespace: inventory
+subjects:
+  - kind: ServiceAccount
+    name: jenkins-ci
+    namespace: inventory
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-ci
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-ci-read-applications
+  namespace: argocd
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applications]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-ci-read-applications
+  namespace: argocd
+subjects:
+  - kind: ServiceAccount
+    name: jenkins-ci
+    namespace: inventory
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-ci-read-applications
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-ci-find-ingress
+  namespace: ingress-nginx
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-ci-find-ingress
+  namespace: ingress-nginx
+subjects:
+  - kind: ServiceAccount
+    name: jenkins-ci
+    namespace: inventory
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-ci-find-ingress
