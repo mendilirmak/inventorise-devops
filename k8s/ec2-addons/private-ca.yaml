@@ -1,0 +1,39 @@
+# A private certificate authority (CA), run inside the cluster by cert-manager.
+# It signs the HTTPS certificate for inventory.local. Browsers do not know
+# this CA, so they show a warning until its certificate is trusted on the
+# machine (see docs/DEMO.md). Nothing leaves the cluster.
+#
+# 1. A self-signed issuer, used only once, to create the CA certificate.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}
+---
+# 2. The CA certificate itself (valid for 1 year, renewed automatically).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: inventorise-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: inventorise-private-ca
+  secretName: inventorise-ca
+  duration: 8760h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer
+---
+# 3. The issuer that app Ingresses use: certificates signed by our CA.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: inventorise-ca
+spec:
+  ca:
+    secretName: inventorise-ca
