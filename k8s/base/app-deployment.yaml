@@ -40,6 +40,9 @@ spec:
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: inventory-app
+          # During a rolling update, count only pods of the new version.
+          # Otherwise the old pods hide where the new ones should go.
+          matchLabelKeys: [pod-template-hash]
       # When a node stops answering, move its pods after 30 s instead of the
       # default 5 minutes.
       tolerations:
