@@ -38,3 +38,6 @@ terraform/tfplan
 ansible/inventory.ini
 ansible/.secrets/
 ansible/collections/
+
+# Postgres copies made by scripts/backup-postgres.sh: they hold password hashes
+backups/

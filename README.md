@@ -73,11 +73,22 @@ returns 404 until the app is deployed); `kubectl get clusterissuer` shows
 
 | Script | What it does |
 |---|---|
-| `scripts/aws-instances.sh status\|start\|stop` | Start or stop all nine instances (stopped = no compute cost) |
+| `scripts/aws-instances.sh status\|start\|stop` | Start or stop all nine instances in dependency order (stopped = no compute cost) |
 | `scripts/aws-shred.sh` | Lists everything billable; `--destroy` deletes it |
+| `scripts/update-home-ip.sh [--check]` | Points the SSH rule at your current home IP |
+| `scripts/backup-postgres.sh` | Copies the database to `backups/` (keeps the newest 7) |
+
+`start` brings nodes up in this order: bastion, Postgres, control plane,
+workers, CI. It waits for SSH on each group, then for every cluster node to be
+Ready. `stop` does the reverse. Both checks need your SSH key in ssh-agent:
+`eval "$(ssh-agent -s)"; ssh-add ~/.ssh/id_ed25519`.
 
 Running all nine instances costs about $0.42 an hour. Disks and public IPs
 cost about $0.60 a day while stopped. **Stop the instances after every session.**
+
+Before stopping, run `scripts/backup-postgres.sh`. The backups hold password
+hashes, so they stay on this machine only (`backups/` is git-ignored).
+Restore steps are in the script header.
 
 ## Deploy the app
 
