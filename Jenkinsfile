@@ -138,13 +138,13 @@ pipeline {
         // Checkov checks the Kubernetes and Terraform files for risky settings.
         // Skipped checks, each with a reason, are listed in .checkov.yaml.
         sh '''
-          # Checkov writes one file per output. A missing folder makes it write
-          # the report to a file named "reports", so create the folder first.
+          # The JUnit report path must name a file inside the folder, or Checkov
+          # tries to write into the folder itself and fails.
           mkdir -p "$WORKSPACE/devops/reports"
           docker run --rm --user "$(id -u)" -v "$WORKSPACE/devops:/src" -w /src \
             "$CHECKOV_IMAGE" --config-file .checkov.yaml \
             --directory k8s --directory terraform \
-            --output cli --output junitxml --output-file-path console,reports
+            --output cli --output junitxml --output-file-path console,reports/results_junitxml.xml
         '''
       }
       post { always { junit allowEmptyResults: true, testResults: 'devops/reports/results_junitxml.xml' } }

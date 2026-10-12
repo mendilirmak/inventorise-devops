@@ -25,7 +25,15 @@ patches:
           spec:
             containers:
               - name: app
+                # Kubernetes fills in $(VAR) only from variables listed ABOVE it,
+                # so the three Postgres settings come first.
                 env:
+                  - name: POSTGRES_USER
+                    valueFrom: {secretKeyRef: {name: inventory-db, key: POSTGRES_USER}}
+                  - name: POSTGRES_PASSWORD
+                    valueFrom: {secretKeyRef: {name: inventory-db, key: POSTGRES_PASSWORD}}
+                  - name: POSTGRES_DB
+                    valueFrom: {secretKeyRef: {name: inventory-db, key: POSTGRES_DB}}
                   - name: DATABASE_URL
                     value: postgresql+psycopg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=require
   # 2. HTTPS: cert-manager issues the certificate from our private CA.
