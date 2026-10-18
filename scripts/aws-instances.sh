@@ -8,8 +8,9 @@
 #   scripts/aws-instances.sh stop     # the same groups in reverse order
 #
 # Start order matters: private nodes reach the internet through the bastion
-# (NAT), and the cluster needs its database. "start" waits for SSH on each group
-# and, at the end, for every cluster node to report Ready.
+# (NAT), and the cluster needs its database. "start" first runs
+# update-home-ip.sh, so the bastion accepts your current home IP. Then it waits
+# for SSH on each group and, at the end, for every cluster node to report Ready.
 #
 # The checks use SSH, so load your key first:  ssh-add ~/.ssh/id_ed25519
 #
@@ -97,6 +98,9 @@ status() {
 
 start() {
   check_ssh_agent
+  # Fails the whole start if the IP cannot be updated (set -e), so no instance is
+  # started behind a rule that does not allow this machine.
+  "$REPO_DIR/scripts/update-home-ip.sh"
   BASTION=$(terraform -chdir="$REPO_DIR/terraform" output -raw bastion_public_ip)
   local expected_nodes=0
 
