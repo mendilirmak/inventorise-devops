@@ -69,12 +69,14 @@ ssh_node() {  # <ip> <command...>
   local ip=$1
   shift
   # -n: ssh must not read stdin, or it swallows the rest of the caller's loop input.
+  # timeout 30: ConnectTimeout only covers the first connection. A stalled login
+  # would otherwise block this try forever, and retry could never give up.
   if [[ $ip == "$BASTION" ]]; then
     # The command words are meant to be sent to the remote shell as they are.
     # shellcheck disable=SC2029
-    ssh -n "${SSH_OPTS[@]}" "ubuntu@$ip" "$@"
+    timeout 30 ssh -n "${SSH_OPTS[@]}" "ubuntu@$ip" "$@"
   else
-    ssh -n "${SSH_OPTS[@]}" -J "ubuntu@$BASTION" "ubuntu@$ip" "$@"
+    timeout 30 ssh -n "${SSH_OPTS[@]}" -J "ubuntu@$BASTION" "ubuntu@$ip" "$@"
   fi
 }
 
