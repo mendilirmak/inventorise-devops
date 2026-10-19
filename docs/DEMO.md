@@ -36,7 +36,10 @@ Each step says what to show and what to say.
    kubectl -n inventory get pods -o wide    # one pod on inventorise-worker-1, one on inventorise-worker-2
    ```
    If both pods are on the same worker, stop the other worker in step 7 of the demo instead.
-8. **Open these windows in advance:** the browser on the dashboard, Grafana (see step 7), the Argo CD UI (step 4), the Jenkins job, and a terminal with `kubectl -n inventory get hpa app -w`.
+8. **Open these windows in advance:** the browser on the dashboard, Grafana (section 6), the Argo CD UI (section 4), the Jenkins job, and a terminal with `kubectl -n inventory get hpa app -w`. Jenkins has no public address, so it needs its own tunnel. Open it in another terminal, keep it open, then browse to http://localhost:8080:
+   ```bash
+   ssh -N -L 8080:10.20.2.39:8080 ubuntu@$(terraform -chdir=terraform output -raw bastion_public_ip)
+   ```
 
 ## 1. The idea (1 minute)
 
@@ -69,6 +72,8 @@ Show `docs/ARCHITECTURE.md`, and point at the diagram: visitors come through the
 1. In Jenkins, open the job `inventorise` and click **Build Now**. Show the stages as they run: secret scan, lint, unit tests, build, image scan, push, IaC scan, the tag commit, Argo CD, and the smoke test.
 2. While it runs, say: "Jenkins does not touch the cluster. It commits the new image tag to git, and Argo CD applies it."
 3. Show the commit in GitHub: the devops repo, `k8s/overlays/ec2/kustomization.yaml`, with the `newTag` line changed.
+
+Jenkins also starts this build by itself: the job `inventorise-poll` checks the app repo every 5 minutes, so a push to `main` is built and deployed without a click (about 4 minutes in total). **Build Now** starts it at once, which is better on stage.
 
 If the build is still running at the end of the demo, show the finished run from the day before.
 
