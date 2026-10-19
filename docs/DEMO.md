@@ -22,7 +22,7 @@ Each step says what to show and what to say.
    kubectl get nodes          # 5 nodes, all Ready
    ```
 4. **Check the site and the data:** open https://inventory.local/health/ready. It should show `{"status":"ok"}` with no warning. Log in and check that the dashboard has about 40 products.
-5. **Reset the demo data if needed:** `kubectl -n inventory exec -i deploy/app -c app -- python - < docs/seed-demo-data.py` adds the shop data again, if it's missing. It skips products that already exist.
+5. **Reset the demo data if needed:** `kubectl -n inventory exec -i deploy/app -c app -- python - < ~/inventorise/inventorise-docs/seed-demo-data.py` adds the shop data again, if it's missing. It skips products that already exist. The script is in the local notes folder, not in this repo.
 6. **Save the CA certificate** for the API step, if the file is not there yet:
    ```bash
    mkdir -p ~/inventorise/inventorise-docs
