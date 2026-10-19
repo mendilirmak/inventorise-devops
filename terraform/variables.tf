@@ -17,7 +17,7 @@ variable "ami_id" {
 }
 
 variable "admin_cidr" {
-  description = "Your home IP as x.x.x.x/32. Only this address reaches SSH on the bastion. Update it when your IP changes (scripts/update-admin-ip.sh)."
+  description = "Your home IP as x.x.x.x/32. Only this address reaches SSH on the bastion. Update it when your IP changes (scripts/update-home-ip.sh)."
   type        = string
 }
 
