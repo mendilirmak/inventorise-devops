@@ -42,7 +42,9 @@ instances_of() {
     --filters "Name=tag:Project,Values=inventorise" "Name=tag:Role,Values=$1" \
               "Name=instance-state-name,Values=$2" \
     --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value,InstanceId,PrivateIpAddress]' |
-    sort | awk -v skip=",$EXCLUDE," 'index(skip, "," $1 ",") == 0'
+    # Some AWS CLI builds end lines with a carriage return (\r). Strip it, or the IP
+    # becomes "10.20.2.142<CR>", which ssh rejects as an invalid hostname.
+    tr -d '\r' | sort | awk -v skip=",$EXCLUDE," 'index(skip, "," $1 ",") == 0'
 }
 
 # Space-separated instance IDs from instances_of output on stdin.
@@ -50,12 +52,14 @@ ids_only() { awk '{ printf "%s ", $2 }'; }
 
 # Runs a check until it succeeds or the time limit passes.
 retry() {  # <what> <seconds> <command...>
-  local what=$1 limit=$2
+  local what=$1 limit=$2 out
   shift 2
   local end=$((SECONDS + limit))
-  until "$@" >/dev/null 2>&1; do
+  # Keep the last output, so a timeout says why the check failed.
+  until out=$("$@" 2>&1); do
     if (( SECONDS >= end )); then
       echo "  timed out waiting for: $what" >&2
+      echo "  last error: $(tail -n 3 <<<"$out")" >&2
       return 1
     fi
     sleep 10
@@ -124,7 +128,7 @@ start() {
       if [[ $role == bastion ]]; then
         ip=$BASTION
       fi
-      retry "SSH to $name" 300 ssh_node "$ip" true || exit 1
+      retry "SSH to $name" 120 ssh_node "$ip" true || exit 1
     done < <(instances_of "$role" running)
 
     if [[ $role == control-plane || $role == worker ]]; then
