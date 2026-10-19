@@ -47,9 +47,9 @@ Show `docs/ARCHITECTURE.md`, and point at the diagram: visitors come through the
 ## 2. Log in and use the app (2 minutes)
 
 1. Open https://inventory.local/login. Log in as the demo user (`<user>`, the name you created in the setup step).
-2. **Dashboard:** point out the product table, the shaded low-stock rows, and the stock chart. Say that the chart and the API use the same code (`services.analytics`).
+2. **Dashboard:** point out the three numbers, the **Needs restocking** list (lowest stock first), the two charts (the 10 lowest-stock products and restocks per day), and the product table with its amber **Low** markers. Try the search box and the **Low stock only** box. Say that the charts and the API use the same code (`services.analytics`).
 3. **Add a product:** click **New product** in the top bar, enter a name, SKU, price and stock, and save. Show the new row on the dashboard.
-4. **Restock:** click **Edit / restock** on that product, add 10 units with a note, and show the stock go up. The restock appears under Recent restocks.
+4. **Restock:** two ways. In **Needs restocking**, type a number next to a product and click **Add stock**: the page stays on the dashboard and the list updates. Or click a product name, add 10 units with a note under **Add stock**, and show the stock go up. The restock appears under **Recent restocks**.
 5. **API:** in a terminal, get a token and call the API:
    ```bash
    TOKEN=$(curl -s --cacert ~/inventorise/inventorise-docs/ca.crt \

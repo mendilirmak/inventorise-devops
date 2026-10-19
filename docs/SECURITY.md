@@ -19,7 +19,7 @@ Labels used below:
 | Login rules | Login failures and successes are logged with the username, IP and result. The response time is the same for an unknown user and a wrong password. |
 | Accounts are created from the server only | `flask create-user` is the only way to make an account. There is no sign-up page. |
 | CSRF protection | Form posts need a token (Flask-WTF). The API uses bearer tokens, not cookies, so it is not open to cross-site requests. |
-| Content-Security-Policy | Scripts load only from this site and the pinned Chart.js CDN, with a Subresource Integrity hash. The page cannot be framed. |
+| Content-Security-Policy | Scripts load only from this site and the pinned Chart.js CDN, with a Subresource Integrity hash. Styles and fonts load only from this site (the IBM Plex fonts are served by the app), and the pages have no inline script or style. The page cannot be framed. |
 | Cookies | HttpOnly, SameSite=Lax, and Secure in production. |
 | Input checks | Lengths, number ranges, SKU format and duplicate SKUs are checked before any write. |
 | No stack traces to users | Errors are logged on the server. Clients get a short message. |
