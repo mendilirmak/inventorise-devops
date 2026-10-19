@@ -10,7 +10,7 @@ resources:
 # build (stage "Update GitOps repo"). Do not edit it by hand.
 images:
   - name: dusterius/inventory-app
-    newTag: "f555b61502fc"
+    newTag: "9e3fb4d21b91"
 patches:
   # 1. The app connects to Postgres over TLS (sslmode=require).
   - target: {kind: Deployment, name: app}
