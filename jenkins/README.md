@@ -48,6 +48,25 @@ The node has no public address and the UI is reachable only through the bastion.
 Argo CD application shows Synced and Healthy, and `https://inventory.local`
 answers.
 
+## Starting a build on a new app commit
+
+Jenkins cannot receive GitHub webhooks: the CI node has no public address. So a
+second, small job checks the app repo every 5 minutes and starts the pipeline:
+
+1. Create a freestyle job named `inventorise-poll`.
+2. **Source Code Management:** Git, repository `https://github.com/mendilirmak/inventorise-app.git`,
+   branch `main`.
+3. **Build Triggers:** Poll SCM, schedule `H/5 * * * *`.
+4. **Build steps:** none.
+5. **Post-build Actions:** Build other projects: `inventorise`, no parameters
+   (`APP_BRANCH` keeps its default `main`).
+
+The devops repo is not polled. The pipeline commits the image tag there, so
+polling it would start a build after every build, endlessly.
+
+Check: push a commit to the app repo, or wait for a poll. A `inventorise` build
+should start within about 5 minutes. Cost: a request to GitHub every 5 minutes.
+
 ## Updating Jenkins or a plugin
 
 Change the version in `Dockerfile` (or the plugin names in `plugins.txt`),
