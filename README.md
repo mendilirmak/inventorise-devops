@@ -14,8 +14,8 @@ Run every command from **WSL2 (Ubuntu)**, not PowerShell.
 | Cluster, private CA, Argo CD, monitoring | Installed and healthy |
 | Jenkins pipeline (11 stages) | Green. Deploys, then checks the live site |
 | Autoscaling | Tested: 2 → 5 → 2 under load, all requests returned 200 |
-| Worker failure | Being tested |
-| Docs (architecture, demo, security) | Not written yet |
+| Worker failure | Tested 2026-10-12: a worker stopped, the site stayed up apart from about 45 s of partial errors |
+| Docs (architecture, demo, security, ADRs, diagrams) | Written. `DEMO.md` is not yet rehearsed end to end |
 
 ## How it works
 
@@ -32,6 +32,19 @@ push to app repo ──► Jenkins (CI node): scan, test, build, scan image,
 
 Git is the source of truth. Jenkins never runs `kubectl apply` for the app.
 
+## Diagrams
+
+The system is drawn in five pictures, each answering one question. They are
+PNG exports, linked from [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):
+
+- [`big-picture.png`](docs/diagrams/big-picture.png): how a change ships, and how a request is served
+- [`application.png`](docs/diagrams/application.png): the Flask app's parts and access rules
+- [`data-model.png`](docs/diagrams/data-model.png): the three tables and their keys
+- [`cluster.png`](docs/diagrams/cluster.png): the Kubernetes namespaces and objects
+- [`cicd-pipeline.png`](docs/diagrams/cicd-pipeline.png): each pipeline stage and what stops a bad change
+
+The network diagram with the host IP addresses is not in this repo.
+
 | Folder / file | What it is |
 |---|---|
 | `terraform/` | Network, security groups, the 9 instances, Elastic IPs |
@@ -44,7 +57,7 @@ Git is the source of truth. Jenkins never runs `kubectl apply` for the app.
 | `Jenkinsfile` | The 11-stage pipeline |
 | `monitoring/` | Prometheus and Grafana settings, the ServiceMonitor, the dashboard |
 | `scripts/` | Start and stop, bootstrap, backups, the load test, and helpers |
-| `docs/adr/` | Architecture decisions (ADRs) |
+| `docs/` | Architecture, demo and security write-ups; the decision records in `docs/adr/`; the diagrams in `docs/diagrams/` |
 
 ## Pinned versions
 
