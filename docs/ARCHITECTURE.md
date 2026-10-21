@@ -67,3 +67,33 @@ the cluster running if one fails. EC2 is the only AWS service we use, which keep
 the cost low and the scope small. The main trade-offs are written up in the
 architecture decision records in `docs/adr/`, and the known gaps are listed in
 `SECURITY.md`.
+
+## Diagrams
+
+The same system, one question per picture. Each image is a PNG exported from
+the interactive diagram pages.
+
+**The big picture.** How a code change reaches production, and how a request
+is served.
+
+![The big picture](diagrams/big-picture.png)
+
+**Inside the application.** The Flask app: the page and API front doors, the
+shared business rules, and the database.
+
+![Inside the application](diagrams/application.png)
+
+**Data model.** The three database tables, their keys, and which values are
+stored as hashes.
+
+![Data model](diagrams/data-model.png)
+
+**What runs in the cluster.** The Kubernetes namespaces and their objects,
+grouped by namespace.
+
+![What runs in the cluster](diagrams/cluster.png)
+
+**CI/CD pipeline.** Each stage from the Jenkins poll to the smoke test, and
+what stops a bad change.
+
+![CI/CD pipeline](diagrams/cicd-pipeline.png)
